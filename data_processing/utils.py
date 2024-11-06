@@ -3,6 +3,7 @@ import pretty_midi
 import numpy as np
 import os
 import pandas as pd
+from shutil import move
 
 
 def jams_to_midi(jams_path, q=1):
@@ -32,20 +33,21 @@ def jams_to_midi(jams_path, q=1):
             midi.instruments.append(midi_ch)
     return midi
 
+
 def create_dataset(csv_path, data_path, output, audio_col, midi_col):
-  df = pd.read_csv(csv_path)
-  df = df.filter([audio_col, midi_col])
-  samples = df.sample(n=250)
+    df = pd.read_csv(csv_path)
+    df = df.filter([audio_col, midi_col])
+    samples = df.sample(n=250)
 
-  if not os.path.exists(output):
-    os.makedirs(output)
-    os.makedirs(os.path.join(output, 'audio'))
-    os.makedirs(os.path.join(output, 'midi'))
+    if not os.path.exists(output):
+        os.makedirs(output)
+        os.makedirs(os.path.join(output, "audio"))
+        os.makedirs(os.path.join(output, "midi"))
 
-  for _, row in samples.iterrows():
-    audio_path = os.path.join(data_path, row[audio_col])
-    midi_path = os.path.join(data_path, row[midi_col])
-    output_path = os.path.join(output, 'audio', audio_path.split('/')[-1])
-    !mv {audio_path} {output_path}
-    output_path = os.path.join(output, 'midi', midi_path.split('/')[-1])
-    !mv {midi_path} {output_path}
+    for _, row in samples.iterrows():
+        audio_path = os.path.join(data_path, row[audio_col])
+        midi_path = os.path.join(data_path, row[midi_col])
+        output_path = os.path.join(output, "audio", audio_path.split("/")[-1])
+        move(audio_path, output_path)
+        output_path = os.path.join(output, "midi", midi_path.split("/")[-1])
+        move(midi_path, output_path)
