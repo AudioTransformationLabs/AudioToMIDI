@@ -77,6 +77,8 @@ def create_dataset(csv_path, data_path, output, audio_col, midi_col):
 
 # Create train test split by calling this function on required subsets
 # Create 80-20 splits
+
+
 def create_train_test_split(input_path: str, train_path: str, test_path: str) -> None:
     input_audio_path = os.path.join(input_path, "audio")
     input_midi_path = os.path.join(input_path, "midi")
@@ -87,17 +89,18 @@ def create_train_test_split(input_path: str, train_path: str, test_path: str) ->
     test_audio_path = os.path.join(test_path, "audio")
     test_midi_path = os.path.join(test_path, "midi")
 
-    # input_files = zip(
-    #     sorted(os.listdir(input_audio_path)), sorted(os.listdir(input_midi_path))
-    # )
-    input_files = [
-        (input_audio, input_midi)
-        for input_audio, input_midi in zip(
-            sorted(os.listdir(input_audio_path)), sorted(os.listdir(input_midi_path))
-        )
-    ]
+    input_files = list(
+        zip(sorted(os.listdir(input_audio_path)), sorted(os.listdir(input_midi_path)))
+    )
+    # input_files = [
+    #     (input_audio, input_midi)
+    #     for input_audio, input_midi in zip(
+    #         sorted(os.listdir(input_audio_path)), sorted(os.listdir(input_midi_path))
+    #     )
+    # ]
+    # print(input_files)
 
-    train_files, test_files = train_test_split(input_files, 0.2, 0.8, shuffle=True)
+    train_files, test_files = train_test_split(input_files, test_size=0.2, shuffle=True)
     for train_audio_file, train_midi_file in train_files:
         copy(
             os.path.join(input_audio_path, train_audio_file),
