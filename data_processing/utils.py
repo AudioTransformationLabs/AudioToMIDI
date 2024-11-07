@@ -89,16 +89,12 @@ def create_train_test_split(input_path: str, train_path: str, test_path: str) ->
     test_audio_path = os.path.join(test_path, "audio")
     test_midi_path = os.path.join(test_path, "midi")
 
-    input_files = list(
-        zip(sorted(os.listdir(input_audio_path)), sorted(os.listdir(input_midi_path)))
-    )
-    # input_files = [
-    #     (input_audio, input_midi)
-    #     for input_audio, input_midi in zip(
-    #         sorted(os.listdir(input_audio_path)), sorted(os.listdir(input_midi_path))
-    #     )
-    # ]
-    # print(input_files)
+    input_files = [
+        (input_audio, input_midi)
+        for input_audio, input_midi in zip(
+            sorted(os.listdir(input_audio_path)), sorted(os.listdir(input_midi_path))
+        )
+    ]
 
     train_files, test_files = train_test_split(input_files, test_size=0.2, shuffle=True)
     for train_audio_file, train_midi_file in train_files:
