@@ -65,9 +65,13 @@ class Transformer:
         results = []
         files = os.listdir(split_audio_path)
         for file in files:
+            file_path = os.path.join(split_audio_path, file)
             results.append(
                 Transformer.audio_to_mfcc(
-                    file, n_mfcc=n_mfcc, sample_rate=sample_rate, hop_length=hop_length
+                    file_path,
+                    n_mfcc=n_mfcc,
+                    sample_rate=sample_rate,
+                    hop_length=hop_length,
                 )
             )
         return results
@@ -84,9 +88,10 @@ class Transformer:
         results = []
         files = os.listdir(split_audio_path)
         for file in files:
+            file_path = os.path.join(split_audio_path, file)
             results.append(
                 Transformer.audio_to_mel_spec(
-                    file,
+                    file_path,
                     max_length=max_length,
                     sample_rate=sample_rate,
                     n_mels=n_mels,
