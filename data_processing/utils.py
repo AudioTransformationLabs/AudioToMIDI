@@ -37,8 +37,6 @@ def process_guitarset(data_path, output_path):
     audio_files = sorted([f for f in os.listdir(f'{data_path}/audio') if f.endswith('.wav')])
     midi_files = sorted([f for f in os.listdir(f'{data_path}/midi') if f.endswith('.mid')])
 
-    audio_files_cleaned = [f.replace('_hex', '') for f in audio_files]
-
     data = {'audio_filename': audio_files, 'midi_filename': midi_files}
     df = pd.DataFrame(data)
     df.to_csv(output_path, index=False)
@@ -46,7 +44,7 @@ def process_guitarset(data_path, output_path):
     with open(output_path, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['audio_filename', 'midi_filename'])
-        for audio_file, midi_file in zip(audio_files_cleaned, midi_files):
+        for audio_file, midi_file in zip(audio_files, midi_files):
             writer.writerow([audio_file, midi_file])
 
 
