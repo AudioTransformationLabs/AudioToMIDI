@@ -3,7 +3,7 @@ import pretty_midi
 import numpy as np
 import os
 import pandas as pd
-from shutil import move
+from shutil import copy
 import csv
 
 def jams_to_midi(jams_path, q=1):
@@ -62,6 +62,6 @@ def create_dataset(csv_path, data_path, output, audio_col, midi_col):
         audio_path = os.path.join(data_path, row[audio_col])
         midi_path = os.path.join(data_path, row[midi_col])
         output_path = os.path.join(output, "audio", audio_path.split("/")[-1])
-        move(audio_path, output_path)
+        copy(audio_path, output_path)
         output_path = os.path.join(output, "midi", midi_path.split("/")[-1])
-        move(midi_path, output_path)
+        copy(midi_path, output_path)
