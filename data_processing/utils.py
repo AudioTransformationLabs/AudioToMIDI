@@ -4,7 +4,7 @@ import numpy as np
 import os
 import pandas as pd
 from shutil import move
-
+import csv
 
 def jams_to_midi(jams_path, q=1):
     # q = 1: with pitch bend. q = 0: without pitch bend.
@@ -32,6 +32,22 @@ def jams_to_midi(jams_path, q=1):
         if len(midi_ch.notes) != 0:
             midi.instruments.append(midi_ch)
     return midi
+
+def process_guitarset(data_path, output_path):
+    audio_files = sorted([f for f in os.listdir(f'{data_path}/audio') if f.endswith('.wav')])
+    midi_files = sorted([f for f in os.listdir(f'{data_path}/midi') if f.endswith('.mid')])
+
+    audio_files_cleaned = [f.replace('_hex', '') for f in audio_files]
+
+    data = {'audio_filename': audio_files, 'midi_filename': midi_files}
+    df = pd.DataFrame(data)
+    df.to_csv(output_path, index=False)
+
+    with open(output_path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['audio_filename', 'midi_filename'])
+        for audio_file, midi_file in zip(audio_files_cleaned, midi_files):
+            writer.writerow([audio_file, midi_file])
 
 
 def create_dataset(csv_path, data_path, output, audio_col, midi_col):
