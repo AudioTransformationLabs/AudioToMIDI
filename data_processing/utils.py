@@ -78,8 +78,8 @@ def create_dataset(csv_path, data_path, output, audio_col, midi_col):
 # Create train test split by calling this function on required subsets
 # Create 80-20 splits
 def create_train_test_split(input_path: str, train_path: str, test_path: str) -> None:
-    input_audio_path = os.path.join(input_path, "audio/")
-    input_midi_path = os.path.join(input_path, "midi/")
+    input_audio_path = os.path.join(input_path, "audio")
+    input_midi_path = os.path.join(input_path, "midi")
 
     train_audio_path = os.path.join(train_path, "audio")
     train_midi_path = os.path.join(train_path, "midi")
