@@ -12,16 +12,14 @@ N_FFT = 2048
 HOP_LENGTH = 512
 DURATION = 5
 
-print(str(torchaudio.list_audio_backends()))
-
 np.set_printoptions(threshold=sys.maxsize)
 
 class Transformer:
 
     @staticmethod
-    def audio_to_mfcc(audio_path: str, n_mfcc=13, sample_rate=22050, hop_length=512):
+    def audio_to_mfcc(audio_path: str, backend='sox', n_mfcc=13, sample_rate=22050, hop_length=512):
         # Load the audio file
-        waveform, sr = torchaudio.load(audio_path)
+        waveform, sr = torchaudio.load(audio_path, backend=backend)
 
         # Ensure the sample rate matches the expected one
         if sr != sample_rate:
@@ -41,13 +39,14 @@ class Transformer:
     @staticmethod
     def audio_to_mel_spec(
         audio_path,
+        backend='sox',
         max_length=128,
         sample_rate=SAMPLE_RATE,
         n_mels=N_MELS,
         hop_length=HOP_LENGTH,
         n_fft=N_FFT,
     ):
-        waveform, sr = torchaudio.load(audio_path)
+        waveform, sr = torchaudio.load(audio_path, backend=backend)
         if waveform.shape[0] > 1:
             waveform = waveform[0:1, :]
 
