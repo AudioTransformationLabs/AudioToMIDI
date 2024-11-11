@@ -2,6 +2,9 @@ import torchaudio
 import torchaudio.transforms as T
 import torch.nn.functional as F
 import os
+import pretty_midi
+import numpy as np
+import sys
 
 SAMPLE_RATE = 16000
 N_MELS = 128
@@ -9,6 +12,9 @@ N_FFT = 2048
 HOP_LENGTH = 512
 DURATION = 5
 
+print(str(torchaudio.list_audio_backends()))
+
+np.set_printoptions(threshold=sys.maxsize)
 
 class Transformer:
 
@@ -100,3 +106,8 @@ class Transformer:
                 )
             )
         return results
+
+    @staticmethod
+    def midi_to_label(midi_path):
+        midi_data = pretty_midi.PrettyMIDI(midi_path).get_piano_roll(fs=100).T.astype(np.float32)
+        return midi_data
