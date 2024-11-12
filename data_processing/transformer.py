@@ -1,3 +1,4 @@
+import torch
 import torchaudio
 import torchaudio.transforms as T
 import torch.nn.functional as F
@@ -10,7 +11,8 @@ SAMPLE_RATE = 16000
 N_MELS = 128
 N_FFT = 2048
 HOP_LENGTH = 512
-DURATION = 5
+
+MAX_LENGTH = 39342495
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -39,7 +41,6 @@ class Transformer:
     @staticmethod
     def audio_to_mel_spec(
         audio_path,
-        max_length=128,
         sample_rate=SAMPLE_RATE,
         n_mels=N_MELS,
         hop_length=HOP_LENGTH,
@@ -47,19 +48,16 @@ class Transformer:
     ):
         waveform, sr = torchaudio.load(audio_path)
         if waveform.shape[0] > 1:
-            waveform = waveform[0:1, :]
+            waveform = torch.mean(waveform, dim=0)
 
         if sr != sample_rate:
             waveform = torchaudio.transforms.Resample(sr, sample_rate)(waveform)
 
+        if waveform.shape[-1] < MAX_LENGTH:
+            pad_amount = MAX_LENGTH - waveform.shape[-1]
+            waveform = F.pad(waveform, (0, pad_amount), mode="constant", value=0)
+
         mel_spec = T.MelSpectrogram(sample_rate, n_fft, n_mels, hop_length)(waveform)
-
-        if mel_spec.shape[-1] < max_length:
-            pad_amount = max_length - mel_spec.shape[-1]
-            mel_spec = F.pad(mel_spec, (0, pad_amount), mode="constant", value=0)
-        else:
-            mel_spec = mel_spec[:, :, :max_length]
-
         return mel_spec
 
     @staticmethod
@@ -106,6 +104,33 @@ class Transformer:
         return results
 
     @staticmethod
-    def midi_to_label(midi_path):
-        midi_data = pretty_midi.PrettyMIDI(midi_path).get_piano_roll(fs=100).T.astype(np.float32)
-        return midi_data
+    def midi_to_piano_roll(midi_path, fs=100):
+        midi = pretty_midi.PrettyMIDI(midi_path)
+        piano_roll = midi.get_piano_roll(fs=fs)
+        piano_roll = (piano_roll > 0).astype(np.float32)
+        return piano_roll
+    
+    @staticmethod
+    def model_output_to_piano_roll(output, threshold=0.1):
+        binary_output = (output > threshold).numpy()
+    
+        piano_rolls = []
+        for batch in range(binary_output.shape[0]):
+            piano_roll = np.zeros((128, binary_output.shape[2]))
+            for i in range(128):
+                piano_roll[i, :] = binary_output[batch, i, :]
+            piano_rolls.append(piano_roll)
+    
+        return piano_rolls
+    
+    @staticmethod
+    def maximum_audio_length(audio_dirs: list[str]):
+        max_length = 0
+        for audio_dir in audio_dirs:
+            for file in os.listdir(audio_dir):
+                file_path = os.path.join(audio_dir, file)
+                waveform, sr = torchaudio.load(file_path)
+                if sr != 16000:
+                    waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
+                max_length = max(max_length, waveform.shape[1])
+        return max_length
