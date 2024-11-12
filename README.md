@@ -26,6 +26,11 @@ Currently we only plan to support piano audio files.
 
 # Upcoming Tasks
 
-- Project Milestone: https://cvl-umass.github.io/compsci682-fall-2024/projects/template/main.pdf
-  -  
+- Implement Model Architecture
+- Confirm Output and MIDI conversion to compatible formats
+- Write training loop
+- Write functions for evaluating the model (accuracy, F1 score, etc.)
+- K-Fold Cross Validation (fine tune hyperparams)
+- Evaluate on test set (and maybe other benchmark datasets to compare with baseline?)
+- Write report
 
