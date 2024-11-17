@@ -1,74 +1,50 @@
 import torch
 import torchaudio
-import torchaudio.transforms as T
-import torch.nn.functional as F
-import os
-import pretty_midi
-import numpy as np
+from torchaudio.transforms import MelSpectrogram, MFCC
+from torch.nn.functional import pad
+from torchaudio.transforms import MelSpectrogram
+from pretty_midi import PrettyMIDI
+from .constants import *
 
 
 class Transformer:
-    SAMPLE_RATE = 2000
-    N_MELS = 128
-    N_FFT = 2048
-    HOP_LENGTH = 20000
-    MAX_AUDIO_LENGTH = 4917812
-    MAX_MIDI_LENGTH = 245793
-
     @staticmethod
-    def audio_to_mfcc(file_path: str, n_mfcc=13, hop_length=512):
-        waveform, sr = torchaudio.load(file_path)
-
-        if sr != Transformer.SAMPLE_RATE:
-            waveform = torchaudio.functional.resample(
-                waveform, sr, Transformer.SAMPLE_RATE
-            )
-
-        if waveform.shape[-1] < Transformer.MAX_AUDIO_LENGTH:
-            pad_amount = Transformer.MAX_AUDIO_LENGTH - waveform.shape[-1]
-            waveform = F.pad(waveform, (0, pad_amount), mode="constant", value=0)
-
-        # Define the MFCC transform
-        mfcc_transform = T.MFCC(
+    def mfcc_transform():
+        return MFCC(
             sample_rate=Transformer.SAMPLE_RATE,
-            n_mfcc=n_mfcc,
-            melkwargs={"n_fft": 2048, "hop_length": hop_length, "n_mels": 128},
+            n_mfcc=N_MFCC,
+            melkwargs={"n_fft": N_FFT, "hop_length": HOP_LENGTH, "n_mels": N_MELS},
         )
-        # Convert the waveform to MFCCs
-        mfcc = mfcc_transform(waveform)
-        return mfcc
 
     @staticmethod
-    def audio_to_mel_spec(
-        audio_path,
-        sample_rate=SAMPLE_RATE,
-        n_mels=N_MELS,
-        hop_length=HOP_LENGTH,
-        n_fft=N_FFT,
-    ):
+    def mel_spec_transform():
+        return MelSpectrogram(SAMPLE_RATE, N_FFT, N_MELS, HOP_LENGTH)
+    
+    @staticmethod
+    def transform_audio(audio_path, transform):
         waveform, sr = torchaudio.load(audio_path)
+        if sr != SAMPLE_RATE:
+            waveform = torchaudio.transforms.Resample(sr, SAMPLE_RATE)(waveform)
+
         if waveform.shape[0] > 1:
             waveform = torch.mean(waveform, dim=0).unsqueeze(dim=0)
 
-        if sr != sample_rate:
-            waveform = torchaudio.transforms.Resample(sr, sample_rate)(waveform)
-
-        if waveform.shape[-1] < Transformer.MAX_AUDIO_LENGTH:
-            pad_amount = Transformer.MAX_AUDIO_LENGTH - waveform.shape[-1]
-            waveform = F.pad(waveform, (0, pad_amount), mode="constant", value=0)
-
-        mel_spec = T.MelSpectrogram(sample_rate, n_fft, n_mels, hop_length)(waveform)
-        return mel_spec
+        transformed_audio = transform(waveform)
+        return transformed_audio
 
     @staticmethod
-    def midi_to_piano_roll(midi_path, fs=100):
-        midi = pretty_midi.PrettyMIDI(midi_path)
-        piano_roll = midi.get_piano_roll(fs=fs)
-        piano_roll = (piano_roll > 0).astype(np.float32)
-        piano_roll = torch.Tensor(piano_roll)
-        if piano_roll.shape[-1] < Transformer.MAX_MIDI_LENGTH:
-            pad_amount = Transformer.MAX_MIDI_LENGTH - piano_roll.shape[-1]
-            piano_roll = F.pad(piano_roll, (0, pad_amount), mode="constant", value=0)
+    def transform_midi(midi_path, num_time_frames, fs=100):
+        midi = PrettyMIDI(midi_path)
+        piano_roll = torch.zeros(128, num_time_frames)
+
+        for instrument in midi.instruments:
+            for note in instrument.notes:
+                start_frame = int(note.start * fs)
+                end_frame = int(note.end * fs)
+                if end_frame > num_time_frames:
+                    end_frame = num_time_frames
+                piano_roll[note.pitch, start_frame:end_frame] = 1
+
         return piano_roll
 
     @staticmethod
@@ -83,38 +59,29 @@ class Transformer:
         return piano_rolls
 
     @staticmethod
-    def maximum_audio_length(audio_dirs: list[str]):
-        max_length = 0
-        for audio_dir in audio_dirs:
-            for file in os.listdir(audio_dir):
-                file_path = os.path.join(audio_dir, file)
-                waveform, sr = torchaudio.load(file_path)
-                if sr != Transformer.SAMPLE_RATE:
-                    waveform = torchaudio.transforms.Resample(
-                        sr, Transformer.SAMPLE_RATE
-                    )(waveform)
-                max_length = max(max_length, waveform.shape[1])
-        return max_length
+    def split_into_chunks(tensor, chunk_length, hop_length):
+        num_time_frames = tensor.shape[-1]
+        chunks = []
+        for start in range(0, num_time_frames - chunk_length + 1, hop_length):
+            end = start + chunk_length
+            chunks.append(tensor[..., start:end])
+
+        if len(chunks) == 0:
+            padding = chunk_length - tensor.shape[-1]
+            if padding > 0:
+                tensor = pad(tensor, (0, padding))
+            return tensor[..., :chunk_length].unsqueeze(0)
+
+        return torch.stack(chunks)
 
     @staticmethod
-    def maximum_midi_length(midi_dirs: list[str]):
-        max_length = 0
-        for midi_dir in midi_dirs:
-            for file in os.listdir(midi_dir):
-                midi_path = os.path.join(midi_dir, file)
+    def split_audio_midi_pair(audio_path, midi_path, transform, chunk_length, hop_length):
+        spectrogram = Transformer.transform_audio(audio_path, transform)
+        num_time_frames = spectrogram.shape[-1]
 
-                midi = pretty_midi.PrettyMIDI(midi_path)
-                piano_roll = midi.get_piano_roll()
-                max_length = max(max_length, piano_roll.shape[1])
-        return max_length
+        piano_roll = Transformer.transform_midi(midi_path, num_time_frames)
 
+        audio_chunks = Transformer.split_into_chunks(spectrogram, chunk_length, hop_length)
+        midi_chunks = Transformer.split_into_chunks(piano_roll, chunk_length, hop_length)
 
-if __name__ == "__main__":
-    # max_length = Transformer.maximum_audio_length(
-    #     ["data/train/audio", "data/test/audio"]
-    # )
-    # print(max_length)
-    Transformer.audio_to_mel_spec("data/train/audio/00_BN1-129-Eb_comp_hex.wav")
-    # Transformer.midi_to_piano_roll("data/train/midi/00_BN1-129-Eb_comp.mid")
-    # max_length = Transformer.maximum_midi_length(["data/train/midi", "data/test/midi"])
-    # print(max_length)
+        return audio_chunks, midi_chunks
