@@ -17,8 +17,8 @@ class AudioMidiDataset(Dataset):
         self.transform = transform
 
         self.data = []
-        for idx, (audio_file, midi_file) in tqdm(
-            enumerate(zip(self.audio_files, self.midi_files)),
+        for (audio_file, midi_file) in tqdm(
+            zip(self.audio_files, self.midi_files),
             desc="Processing audio-midi pairs",
             total=len(self.audio_files),
         ):

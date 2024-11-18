@@ -38,16 +38,16 @@ LEARNING_RATES = [0.001, 0.01, 0.005]
 best_model = None
 best_acc = float("-inf")
 
-# for epoch in range(NUM_EPOCHS):
-for epoch in range(TEMP_NUM_EPOCHS):
-    for lr in LEARNING_RATES:
+for lr in LEARNING_RATES:
+    # for epoch in range(NUM_EPOCHS):
+    for epoch in range(TEMP_NUM_EPOCHS):
         model = AudioToMidiCNN()
         criterion = nn.BCELoss()
         optimizer = optim.Adam(model.parameters(), lr=lr)
         model.train()
         curr_loss = 0.0
-        for batch_idx, (features, labels) in tqdm(
-            enumerate(train_loader),
+        for (features, labels) in tqdm(
+            train_loader,
             desc=f"Learning Rate: {lr}",
             total=len(train_loader),
         ):
@@ -61,8 +61,7 @@ for epoch in range(TEMP_NUM_EPOCHS):
         print(
             f"Epoch {epoch + 1}/{NUM_EPOCHS}, Loss: {curr_loss / len(train_loader):.4f}"
         )
-        test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
-        test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+        
         results = evaluate_model(model, test_loader, device)
         acc = results["accuracy"]
         if acc > best_acc:
