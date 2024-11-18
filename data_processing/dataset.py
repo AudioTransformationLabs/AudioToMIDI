@@ -1,7 +1,7 @@
 import os
 from torch.utils.data import Dataset
 
-from constants import *
+from .constants import *
 from .transformer import Transformer
 
 class AudioMidiDataset(Dataset):
