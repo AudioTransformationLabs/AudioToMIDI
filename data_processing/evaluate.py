@@ -20,7 +20,7 @@ def load_model(model_path):
     return model
 
 
-def evaluate_model(model, dataloader, threshold=0.5):
+def evaluate_model(model, dataloader, device, threshold=0.5):
     total_loss = 0
 
     correct = 0
@@ -63,5 +63,5 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_model(MODEL_PATH).to(device)
 
-    results = evaluate_model(model, test_loader)
+    results = evaluate_model(model, test_loader, device)
     print("Evaluation Metrics:", results)

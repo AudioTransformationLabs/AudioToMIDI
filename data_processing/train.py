@@ -56,7 +56,7 @@ for epoch in range(TEMP_NUM_EPOCHS):
         )
         test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
         test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
-        results = evaluate_model(model, test_loader)
+        results = evaluate_model(model, test_loader, device)
         acc = results["accuracy"]
         if acc > best_acc:
             best_acc = acc
