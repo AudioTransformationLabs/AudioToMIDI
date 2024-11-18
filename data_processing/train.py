@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from .constants import (
     BATCH_SIZE,
@@ -25,9 +26,12 @@ transform = (
 )
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using {device} to run model training")
+
 train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
+test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 TEMP_NUM_EPOCHS = 1
 LEARNING_RATES = [0.001, 0.01, 0.005]
@@ -42,8 +46,11 @@ for epoch in range(TEMP_NUM_EPOCHS):
         optimizer = optim.Adam(model.parameters(), lr=lr)
         model.train()
         curr_loss = 0.0
-        for batch_idx, (features, labels) in enumerate(train_loader):
-            print(f"Batch {batch_idx+1}/{len(train_loader)}")
+        for batch_idx, (features, labels) in tqdm(
+            enumerate(train_loader),
+            desc=f"Learning Rate: {lr}",
+            total=len(train_loader),
+        ):
             optimizer.zero_grad()
             outputs = model(features)
             loss = criterion(outputs, labels)
@@ -54,8 +61,6 @@ for epoch in range(TEMP_NUM_EPOCHS):
         print(
             f"Epoch {epoch + 1}/{NUM_EPOCHS}, Loss: {curr_loss / len(train_loader):.4f}"
         )
-        test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
-        test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
         results = evaluate_model(model, test_loader)
         acc = results["accuracy"]
         if acc > best_acc:
