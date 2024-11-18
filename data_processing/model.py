@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class AudioToMidiCNN(nn.Module):
     def __init__(self, input_channels=1, num_classes=1024, dropout_prob=0.3):
         super(AudioToMidiCNN, self).__init__()
@@ -10,12 +11,10 @@ class AudioToMidiCNN(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),  # Time and frequency dims are divided by 2
-
             nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),  # Time and frequency dims are divided by 2
-
             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
@@ -29,7 +28,7 @@ class AudioToMidiCNN(nn.Module):
             hidden_size=2048,
             num_layers=1,
             bidirectional=True,
-            batch_first=True
+            batch_first=True,
         )
 
         # Dropout for regularization
@@ -44,7 +43,9 @@ class AudioToMidiCNN(nn.Module):
         x = self.conv_block(x)  # Shape: (batch_size, 128, freq_bins, time_frames)
 
         batch_size, _, _, time_frames = x.shape
-        x = x.permute(0, 3, 1, 2).reshape(batch_size, time_frames, -1)  # Shape: (batch_size, time_frames, features)
+        x = x.permute(0, 3, 1, 2).reshape(
+            batch_size, time_frames, -1
+        )  # Shape: (batch_size, time_frames, features)
 
         x, _ = self.bi_lstm(x)  # Shape: (batch_size, time_frames, 2048)
 

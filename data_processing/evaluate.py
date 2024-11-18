@@ -3,14 +3,22 @@ from torch.utils.data import DataLoader
 
 from .dataset import AudioMidiDataset
 from .model import AudioToMidiCNN
-from .constants import *
+from .constants import (
+    FEATURE_TYPE,
+    TEST_AUDIO_PATH,
+    TEST_MIDI_PATH,
+    BATCH_SIZE,
+    MODEL_PATH,
+)
 from .transformer import Transformer
+
 
 def load_model(model_path):
     model = AudioToMidiCNN()
     model.load_state_dict(torch.load(model_path, weights_only=True))
     model.eval()
     return model
+
 
 def evaluate_model(model, dataloader, threshold=0.5):
     total_loss = 0
@@ -24,7 +32,9 @@ def evaluate_model(model, dataloader, threshold=0.5):
         for audio, midi in dataloader:
             audio, midi = audio.to(device), midi.to(device)
 
-            outputs = model(audio)  # Shape: (batch_size, num_classes [128], num_frames [1024])
+            outputs = model(
+                audio
+            )  # Shape: (batch_size, num_classes [128], num_frames [1024])
 
             loss = criterion(outputs, midi)
             total_loss += loss.item()
@@ -37,10 +47,15 @@ def evaluate_model(model, dataloader, threshold=0.5):
     avg_loss = total_loss / len(dataloader)
     accuracy = correct / total
 
-    return { "loss": avg_loss, "accuracy": accuracy }
+    return {"loss": avg_loss, "accuracy": accuracy}
+
 
 if __name__ == "__main__":
-    transform = Transformer.mel_spec_transform() if FEATURE_TYPE == "mel_spec" else Transformer.mfcc_transform()
+    transform = (
+        Transformer.mel_spec_transform()
+        if FEATURE_TYPE == "mel_spec"
+        else Transformer.mfcc_transform()
+    )
 
     test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
@@ -50,4 +65,3 @@ if __name__ == "__main__":
 
     results = evaluate_model(model, test_loader)
     print("Evaluation Metrics:", results)
-
