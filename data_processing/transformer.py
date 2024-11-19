@@ -2,24 +2,31 @@ import torch
 import torchaudio
 from torchaudio.transforms import MelSpectrogram, MFCC
 from torch.nn.functional import pad
-from torchaudio.transforms import MelSpectrogram
 from pretty_midi import PrettyMIDI
-from .constants import *
+from .constants import SAMPLE_RATE, N_FFT, N_MFCC, N_MELS, HOP_LENGTH
 
 
 class Transformer:
     @staticmethod
-    def mfcc_transform():
+    def mfcc_transform(
+        sample_rate=SAMPLE_RATE,
+        n_mfcc=N_MFCC,
+        n_ftt=N_FFT,
+        hop_length=HOP_LENGTH,
+        n_mels=N_MELS,
+    ):
         return MFCC(
-            sample_rate=Transformer.SAMPLE_RATE,
-            n_mfcc=N_MFCC,
-            melkwargs={"n_fft": N_FFT, "hop_length": HOP_LENGTH, "n_mels": N_MELS},
+            sample_rate=sample_rate,
+            n_mfcc=n_mfcc,
+            melkwargs={"n_fft": n_ftt, "hop_length": hop_length, "n_mels": n_mels},
         )
 
     @staticmethod
-    def mel_spec_transform():
-        return MelSpectrogram(SAMPLE_RATE, N_FFT, N_MELS, HOP_LENGTH)
-    
+    def mel_spec_transform(
+        sample_rate=SAMPLE_RATE, n_ftt=N_FFT, n_mels=N_MELS, hop_length=HOP_LENGTH
+    ):
+        return MelSpectrogram(sample_rate, n_ftt, n_mels, hop_length)
+
     @staticmethod
     def transform_audio(audio_path, transform):
         waveform, sr = torchaudio.load(audio_path)
@@ -75,13 +82,19 @@ class Transformer:
         return torch.stack(chunks)
 
     @staticmethod
-    def split_audio_midi_pair(audio_path, midi_path, transform, chunk_length, hop_length):
+    def split_audio_midi_pair(
+        audio_path, midi_path, transform, chunk_length, hop_length
+    ):
         spectrogram = Transformer.transform_audio(audio_path, transform)
         num_time_frames = spectrogram.shape[-1]
 
         piano_roll = Transformer.transform_midi(midi_path, num_time_frames)
 
-        audio_chunks = Transformer.split_into_chunks(spectrogram, chunk_length, hop_length)
-        midi_chunks = Transformer.split_into_chunks(piano_roll, chunk_length, hop_length)
+        audio_chunks = Transformer.split_into_chunks(
+            spectrogram, chunk_length, hop_length
+        )
+        midi_chunks = Transformer.split_into_chunks(
+            piano_roll, chunk_length, hop_length
+        )
 
         return audio_chunks, midi_chunks
