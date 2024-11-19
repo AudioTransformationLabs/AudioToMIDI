@@ -8,7 +8,7 @@ from .constants import (
     TEST_AUDIO_PATH,
     TEST_MIDI_PATH,
     BATCH_SIZE,
-    MODEL_PATH,
+    MODEL_NAME,
 )
 from .transformer import Transformer
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = load_model(MODEL_PATH).to(device)
+    model = load_model(MODEL_NAME).to(device)
 
     results = evaluate_model(model, test_loader, device)
     print("Evaluation Metrics:", results)
