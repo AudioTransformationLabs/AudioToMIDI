@@ -8,8 +8,7 @@ from tqdm import tqdm
 from .constants import (
     BATCH_SIZE,
     FEATURE_TYPE,
-    MODEL_PATH,
-    NUM_EPOCHS,
+    MODEL_NAME,
     TRAIN_AUDIO_PATH,
     TRAIN_MIDI_PATH,
     TEST_AUDIO_PATH,
@@ -63,16 +62,18 @@ for epoch in range(TEMP_NUM_EPOCHS):
                 optimizer.step()
                 curr_loss += loss.item()
 
-                print(
-                    f"Epoch {epoch + 1}/{NUM_EPOCHS}, Loss: {curr_loss / len(train_loader):.4f}"
-                )
+                # print(
+                #     f"Epoch {epoch + 1}/{NUM_EPOCHS}, Loss: {curr_loss / len(train_loader):.4f}"
+                # )
 
             results = evaluate_model(model, test_loader, device)
             acc = results["accuracy"]
             if acc > best_acc:
                 best_acc = acc
-                best_model = {"lr": lr, "dropout": dropout}
-            torch.save(model.state_dict(), f"{MODEL_PATH}_dp={dropout}_lr={lr}")
+                best_model = {"lr": lr, "dropout": dropout, "accuracy": acc}
+
+            print(f"LR: {lr}, Dropout: {dropout} - Accuracy: {acc:.4f}")
+            torch.save(model.state_dict(), f"{MODEL_NAME}_dp={dropout}_lr={lr}.pth")
 
 with open("best_model_params.json", "w") as bmf:
     json.dump(best_model, bmf)

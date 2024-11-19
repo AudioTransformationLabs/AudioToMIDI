@@ -13,7 +13,7 @@ TEST_AUDIO_PATH = "data/test/audio"
 TEST_MIDI_PATH = "data/test/midi"
 
 # Model Path
-MODEL_PATH = "audio_to_midi_cnn.pth"
+MODEL_NAME = "audio_to_midi_cnn"
 
 # Training Parameters
 BATCH_SIZE = 16

@@ -28,10 +28,10 @@ def evaluate_model(model, dataloader, device, threshold=0.5):
 
     criterion = torch.nn.BCELoss()
 
+    model.to(device)
     with torch.no_grad():
         for audio, midi in dataloader:
             audio, midi = audio.to(device), midi.to(device)
-
             outputs = model(
                 audio
             )  # Shape: (batch_size, num_classes [128], num_frames [1024])
