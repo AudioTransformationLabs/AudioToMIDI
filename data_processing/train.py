@@ -9,6 +9,7 @@ from .constants import (
     BATCH_SIZE,
     FEATURE_TYPE,
     MODEL_NAME,
+    NUM_EPOCHS,
     TRAIN_AUDIO_PATH,
     TRAIN_MIDI_PATH,
     TEST_AUDIO_PATH,
@@ -42,10 +43,11 @@ best_acc = float("-inf")
 
 
 for epoch in range(TEMP_NUM_EPOCHS):
-    # for epoch in range(NUM_EPOCHS):
+# for epoch in range(NUM_EPOCHS):
     for lr in LEARNING_RATES:
         for dropout in DROPOUT_PROBS:
             model = AudioToMidiCNN(dropout_prob=dropout)
+            model.to(device)
             criterion = nn.BCELoss()
             optimizer = optim.Adam(model.parameters(), lr=lr)
             model.train()
@@ -55,6 +57,7 @@ for epoch in range(TEMP_NUM_EPOCHS):
                 desc=f"Learning Rate: {lr}",
                 total=len(train_loader),
             ):
+                features, labels = features.to(device), labels.to(device)
                 optimizer.zero_grad()
                 outputs = model(features)
                 loss = criterion(outputs, labels)

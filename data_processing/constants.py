@@ -18,6 +18,6 @@ MODEL_NAME = "audio_to_midi_cnn"
 # Training Parameters
 BATCH_SIZE = 16
 LEARNING_RATE = 0.001
-NUM_EPOCHS = 20
+NUM_EPOCHS = 10
 FEATURE_TYPE = "mel_spec"  # or "mfcc"
 

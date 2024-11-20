@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from data_processing.constants import CHUNK_LENGTH
+from .constants import CHUNK_LENGTH
 
 
 class AudioToMidiCNN(nn.Module):
