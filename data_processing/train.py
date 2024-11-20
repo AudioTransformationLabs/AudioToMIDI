@@ -42,14 +42,14 @@ best_model = None
 best_acc = float("-inf")
 
 
-for epoch in range(TEMP_NUM_EPOCHS):
-# for epoch in range(NUM_EPOCHS):
-    for lr in LEARNING_RATES:
-        for dropout in DROPOUT_PROBS:
-            model = AudioToMidiCNN(dropout_prob=dropout)
-            model.to(device)
-            criterion = nn.BCELoss()
-            optimizer = optim.Adam(model.parameters(), lr=lr)
+for lr in LEARNING_RATES:
+    for dropout in DROPOUT_PROBS:
+        model = AudioToMidiCNN(dropout_prob=dropout)
+        model.to(device)
+        criterion = nn.BCELoss()
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+        # for epoch in range(NUM_EPOCHS):
+        for epoch in range(TEMP_NUM_EPOCHS):
             model.train()
             curr_loss = 0.0
             for features, labels in tqdm(
@@ -69,14 +69,14 @@ for epoch in range(TEMP_NUM_EPOCHS):
                 #     f"Epoch {epoch + 1}/{NUM_EPOCHS}, Loss: {curr_loss / len(train_loader):.4f}"
                 # )
 
-            results = evaluate_model(model, test_loader, device)
-            acc = results["accuracy"]
-            if acc > best_acc:
-                best_acc = acc
-                best_model = {"lr": lr, "dropout": dropout, "accuracy": acc}
+        results = evaluate_model(model, test_loader, device)
+        acc = results["accuracy"]
+        if acc > best_acc:
+            best_acc = acc
+            best_model = {"lr": lr, "dropout": dropout, "accuracy": acc}
 
-            print(f"LR: {lr}, Dropout: {dropout} - Accuracy: {acc:.4f}")
-            torch.save(model.state_dict(), f"{MODEL_NAME}_dp={dropout}_lr={lr}.pth")
+        print(f"LR: {lr}, Dropout: {dropout} - Accuracy: {acc:.4f}")
+        torch.save(model.state_dict(), f"{MODEL_NAME}_dp={dropout}_lr={lr}.pth")
 
 with open("best_model_params.json", "w") as bmf:
     json.dump(best_model, bmf)
