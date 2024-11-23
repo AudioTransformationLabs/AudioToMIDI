@@ -1,7 +1,6 @@
 import pretty_midi
 import matplotlib.pyplot as plt
-from .transformer import Transformer
-
+import librosa
 
 def plot_midi_annotation(midi_path):
     midi_data = pretty_midi.PrettyMIDI(midi_path)
@@ -34,6 +33,15 @@ def plot_piano_roll(piano_roll, path: str = "results/piano_roll_output.png"):
     plt.xlabel("Time (frames)")
     plt.ylabel("MIDI Pitch")
     plt.title("Piano Roll Visualization")
+    plt.savefig(path)
+
+def plot_spectrogram(specgram, title=None, ylabel="freq_bin", ax=None, path: str = "results/spectrogram_output.png"):
+    if ax is None:
+        _, ax = plt.subplots(1, 1)
+    if title is not None:
+        ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.imshow(librosa.power_to_db(specgram), origin="lower", aspect="auto", interpolation="nearest")
     plt.savefig(path)
 
 

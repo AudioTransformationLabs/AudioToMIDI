@@ -12,12 +12,12 @@ TRAIN_MIDI_PATH = "data/train/midi"
 TEST_AUDIO_PATH = "data/test/audio"
 TEST_MIDI_PATH = "data/test/midi"
 
-# Model Path
-MODEL_NAME = "audio_to_midi_cnn"
+# Model Filename
+MODEL_NAME = "AudioToMidiCNN"
 
 # Training Parameters
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 LEARNING_RATE = 0.001
-NUM_EPOCHS = 10
+NUM_EPOCHS = 50
+DROPOUT = 0.5
 FEATURE_TYPE = "mel_spec"  # or "mfcc"
-

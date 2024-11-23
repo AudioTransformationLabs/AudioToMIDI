@@ -55,17 +55,6 @@ class Transformer:
         return piano_roll
 
     @staticmethod
-    def model_output_to_piano_roll(output, threshold=0.1):
-        binary_output = torch.Tensor(output > threshold)
-        piano_rolls = []
-        for batch in range(binary_output.shape[0]):
-            piano_roll = torch.zeros((128, binary_output.shape[2]))
-            for i in range(128):
-                piano_roll[i, :] = binary_output[batch, i, :]
-            piano_rolls.append(piano_roll)
-        return piano_rolls
-
-    @staticmethod
     def split_into_chunks(tensor, chunk_length, hop_length):
         num_time_frames = tensor.shape[-1]
         chunks = []

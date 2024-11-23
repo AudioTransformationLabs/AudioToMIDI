@@ -7,7 +7,9 @@ from tqdm import tqdm
 
 from .constants import (
     BATCH_SIZE,
+    CHUNK_LENGTH,
     FEATURE_TYPE,
+    LEARNING_RATE,
     MODEL_NAME,
     NUM_EPOCHS,
     TRAIN_AUDIO_PATH,
@@ -20,64 +22,71 @@ from .evaluate import evaluate_model
 from .model import AudioToMidiCNN
 from .transformer import Transformer
 
-transform = (
-    Transformer.mel_spec_transform()
-    if FEATURE_TYPE == "mel_spec"
-    else Transformer.mfcc_transform()
-)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using {device} to run model training")
+def train_model(model, learning_rate, dropout, dataloader, optimizer, device, epochs=NUM_EPOCHS):
+    print(f'Learning Rate: {learning_rate}, Dropout: {dropout}')
+    for epoch in range(epochs):
+        model.train()
+        curr_loss = 0.0
+        for audio, midi in tqdm(dataloader, desc=f"Epoch {epoch + 1} / {epochs}", total=len(dataloader)):
+            audio, midi = audio.to(device), midi.to(device)
+            optimizer.zero_grad()
 
-train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+            pos_samples = midi.sum(dim=(0, 2))
+            neg_samples = (BATCH_SIZE * CHUNK_LENGTH) - pos_samples
+            pos_weight = neg_samples / (pos_samples + 1e-8)
+            criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight.unsqueeze(1))
 
-test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
-test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+            outputs = model(audio)
 
-TEMP_NUM_EPOCHS = 1
-LEARNING_RATES = [0.001, 0.01, 0.1]
-CHUNK_LENGTHS = [512, 1024, 2048]
-DROPOUT_PROBS = [1, 0.5, 0.3, 0.1]
-best_model = None
-best_acc = float("-inf")
+            loss = criterion(outputs, midi)
+            loss.backward()
+            optimizer.step()
 
+            curr_loss += loss.item()
 
-for lr in LEARNING_RATES:
-    for dropout in DROPOUT_PROBS:
-        model = AudioToMidiCNN(dropout_prob=dropout)
-        model.to(device)
-        criterion = nn.BCELoss()
-        optimizer = optim.Adam(model.parameters(), lr=lr)
-        # for epoch in range(NUM_EPOCHS):
-        for epoch in range(TEMP_NUM_EPOCHS):
-            model.train()
-            curr_loss = 0.0
-            for features, labels in tqdm(
-                train_loader,
-                desc=f"Learning Rate: {lr}",
-                total=len(train_loader),
-            ):
-                features, labels = features.to(device), labels.to(device)
-                optimizer.zero_grad()
-                outputs = model(features)
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                curr_loss += loss.item()
+        print(f"Epoch {epoch + 1}/{epochs}, Loss: {curr_loss / len(dataloader)}")
 
-                # print(
-                #     f"Epoch {epoch + 1}/{NUM_EPOCHS}, Loss: {curr_loss / len(train_loader):.4f}"
-                # )
+    return model
 
-        results = evaluate_model(model, test_loader, device)
-        acc = results["accuracy"]
-        if acc > best_acc:
-            best_acc = acc
-            best_model = {"lr": lr, "dropout": dropout, "accuracy": acc}
+if __name__ == "__main__":
+    transform = (
+        Transformer.mel_spec_transform()
+        if FEATURE_TYPE == "mel_spec"
+        else Transformer.mfcc_transform()
+    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using {device} to run model training")
 
-        print(f"LR: {lr}, Dropout: {dropout} - Accuracy: {acc:.4f}")
-        torch.save(model.state_dict(), f"{MODEL_NAME}_dp={dropout}_lr={lr}.pth")
+    train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-with open("best_model_params.json", "w") as bmf:
-    json.dump(best_model, bmf)
-    print("Model saved successfully.")
+    test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+
+    LEARNING_RATES = [0.0001, 0.001, 0.01]
+    DROPOUTS = [1, 0.5, 0.1]
+    best_model = {}
+    best_f1 = float("-inf")
+
+    for learning_rate in LEARNING_RATES:
+        for dropout in DROPOUTS:
+            model = AudioToMidiCNN(dropout=dropout).to(device)
+            optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+            trained_model = train_model(model, learning_rate, dropout, train_loader, optimizer, NUM_EPOCHS)
+            torch.save(trained_model.state_dict(), f"{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}.pth")
+
+            results = evaluate_model(trained_model, test_loader, device)
+            print(f"Results for LR={learning_rate}, Dropout={dropout}: {results}")
+
+            if results['f1_score'] >= best_f1:
+                best_f1 = results['f1_score']
+                best_model = {
+                    "learning_rate": learning_rate,
+                    "dropout": dropout,
+                    "f1_score": best_f1,
+                }
+
+    with open("best_model_params.json", "w") as bmf:
+        json.dump(best_model, bmf)
+        print("Best model parameters saved successfully.")
