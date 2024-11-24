@@ -73,7 +73,7 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = load_model(f"{MODEL_NAME}_dp={DROPOUT}_lr={LEARNING_RATE}.pth").to(device)
+    model = load_model(f"models/{MODEL_NAME}_melspec_dp={DROPOUT}_lr={LEARNING_RATE}.pth").to(device)
 
     results = evaluate_model(model, test_loader, device)
     print("Evaluation Metrics:", results)

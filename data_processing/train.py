@@ -1,3 +1,4 @@
+import os
 import torch
 import json
 import torch.nn as nn
@@ -18,16 +19,27 @@ from .constants import (
     TEST_MIDI_PATH,
 )
 from .dataset import AudioMidiDataset
-from .evaluate import evaluate_model
+from .evaluate import evaluate_model, load_model
 from .model import AudioToMidiCNN
 from .transformer import Transformer
 
-def train_model(model, learning_rate, dropout, dataloader, optimizer, device, epochs=NUM_EPOCHS):
+def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
+    if not os.path.exists(model_path) or not os.path.exists(optimizer_path):
+        model = AudioToMidiCNN(dropout=params['dropout']).to(device)
+        optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'])
+        return model, optimizer
+    else:
+        model = load_model(model_path)
+        optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'])
+        optimizer.load_state_dict(torch.load(optimizer_path, weights_only=True))
+        return model, optimizer
+
+def train_model(model, learning_rate, dropout, dataloader, optimizer, device, start_epoch=0, epochs=NUM_EPOCHS):
     print(f'Learning Rate: {learning_rate}, Dropout: {dropout}')
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, start_epoch + epochs):
         model.train()
         curr_loss = 0.0
-        for audio, midi in tqdm(dataloader, desc=f"Epoch {epoch + 1} / {epochs}", total=len(dataloader)):
+        for audio, midi in tqdm(dataloader, desc=f"Epoch {epoch + 1} / {start_epoch + epochs}", total=len(dataloader)):
             audio, midi = audio.to(device), midi.to(device)
             optimizer.zero_grad()
 
@@ -44,7 +56,7 @@ def train_model(model, learning_rate, dropout, dataloader, optimizer, device, ep
 
             curr_loss += loss.item()
 
-        print(f"Epoch {epoch + 1}/{epochs}, Loss: {curr_loss / len(dataloader)}")
+        print(f"Epoch {epoch + 1}/{start_epoch + epochs}, Loss: {curr_loss / len(dataloader)}")
 
     return model
 
@@ -70,11 +82,19 @@ if __name__ == "__main__":
 
     for learning_rate in LEARNING_RATES:
         for dropout in DROPOUTS:
-            model = AudioToMidiCNN(dropout=dropout).to(device)
-            optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+            model, optimizer = load_checkpoint_if_exists(
+                f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}.pth",
+                f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}_optimizer.pth",
+                { "learning_rate": learning_rate, "dropout": dropout },
+                device
+            )
 
-            trained_model = train_model(model, learning_rate, dropout, train_loader, optimizer, NUM_EPOCHS)
-            torch.save(trained_model.state_dict(), f"{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}.pth")
+            # TODO: Obtain start_epoch from model checkpoint state dict
+            trained_model = train_model(
+                model, learning_rate, dropout, train_loader, optimizer, start_epoch=60, epochs=NUM_EPOCHS
+            )
+            torch.save(trained_model.state_dict(), f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}.pth")
+            torch.save(optimizer.state_dict(), f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}_optimizer.pth")
 
             results = evaluate_model(trained_model, test_loader, device)
             print(f"Results for LR={learning_rate}, Dropout={dropout}: {results}")
