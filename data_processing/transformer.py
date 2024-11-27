@@ -87,3 +87,37 @@ class Transformer:
         )
 
         return audio_chunks, midi_chunks
+
+    @staticmethod
+    def remove_short_fragments(predicted_midi, min_length=10):
+        notes, time_frames = predicted_midi.shape
+        for note in range(notes):
+            segment_start = None
+            for time_frame in range(time_frames):
+                if segment_start is not None:
+                    if predicted_midi[note][time_frame] == 0:
+                        length = time_frame - segment_start
+                        if length < min_length:
+                            predicted_midi[note, segment_start:time_frame] = 0
+                        segment_start = None
+                else:
+                    segment_start = time_frame if predicted_midi[note][time_frame] == 1 else segment_start
+
+        return predicted_midi
+    
+    @staticmethod
+    def fill_segment_gaps(predicted_midi, min_length=10):
+        notes, time_frames = predicted_midi.shape
+        for note in range(notes):
+            prev_segment_end = 0
+            for time_frame in range(time_frames):
+                if prev_segment_end is not None:
+                    if predicted_midi[note][time_frame] == 1:
+                        length = time_frame - prev_segment_end
+                        if length < min_length:
+                            predicted_midi[note][prev_segment_end:time_frame] = 1
+                        prev_segment_end = None
+                else:
+                    prev_segment_end = time_frame - 1 if predicted_midi[note][time_frame] == 0 else None
+
+        return predicted_midi

@@ -43,7 +43,8 @@ def evaluate_model(model, dataloader, device):
             total_loss += loss.item()
 
             midi_chunks = midi_chunks.cpu().numpy().reshape(-1, 128)
-            outputs = outputs.cpu().numpy().reshape(-1, 128)
+            outputs = Transformer.remove_short_fragments(Transformer.fill_segment_gaps(outputs.cpu().numpy()))
+            outputs = outputs.reshape(-1, 128)
 
             precision = precision_score(midi_chunks, outputs, zero_division=0, average='samples')
             recall = recall_score(midi_chunks, outputs, zero_division=0, average='samples')
