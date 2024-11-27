@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     audio_chunks, midi_chunks = Transformer.split_audio_midi_pair(AUDIO_PATH, MIDI_PATH, transform, CHUNK_LENGTH, HOP_LENGTH)
 
-    model = load_model(f"data/models/AudioToMidiCNN_LR={LEARNING_RATE}_DROPOUT_{DROPOUT}.pth")
+    model = load_model(f"models/AudioToMidiCNN_melspec_LR=0.001_DROPOUT=0.5.pth")
     audio, midi = audio_chunks[0], midi_chunks[0]
     actual_piano_roll = midi.cpu().numpy()
     with torch.no_grad():

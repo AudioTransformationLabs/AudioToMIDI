@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
             # TODO: Obtain start_epoch from model checkpoint state dict
             trained_model = train_model(
-                model, learning_rate, dropout, train_loader, optimizer, start_epoch=60, epochs=NUM_EPOCHS
+                model, learning_rate, dropout, train_loader, optimizer, start_epoch=100, epochs=NUM_EPOCHS
             )
             torch.save(trained_model.state_dict(), f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}.pth")
             torch.save(optimizer.state_dict(), f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}_optimizer.pth")
