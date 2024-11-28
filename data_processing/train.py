@@ -55,6 +55,7 @@ def train_model(model, learning_rate, dropout, dataloader, optimizer, device, st
             )).to(device)
 
             loss = criterion(outputs, midi)
+            loss.requires_grad = True
             loss.backward()
             optimizer.step()
 
