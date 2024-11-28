@@ -34,7 +34,7 @@ def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
         optimizer.load_state_dict(torch.load(optimizer_path, weights_only=True))
         return model, optimizer
 
-def train_model(model, learning_rate, dropout, dataloader, optimizer, device, start_epoch=0, epochs=NUM_EPOCHS):
+def train_model(model, learning_rate, dropout, dataloader, optimizer, device, start_epoch=0, epochs=NUM_EPOCHS, threshold=0.7):
     print(f'Learning Rate: {learning_rate}, Dropout: {dropout}')
     for epoch in range(start_epoch, start_epoch + epochs):
         model.train()
@@ -49,6 +49,10 @@ def train_model(model, learning_rate, dropout, dataloader, optimizer, device, st
             criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight.unsqueeze(1))
 
             outputs = model(audio)
+            outputs = (torch.sigmoid(model(audio)) >= threshold).float()
+            outputs = Transformer.remove_short_fragments(
+                Transformer.fill_segment_gaps(outputs.cpu().numpy())
+            ).to(device)
 
             loss = criterion(outputs, midi)
             loss.backward()
