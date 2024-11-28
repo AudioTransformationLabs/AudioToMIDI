@@ -50,9 +50,9 @@ def train_model(model, learning_rate, dropout, dataloader, optimizer, device, st
 
             outputs = model(audio)
             outputs = (torch.sigmoid(model(audio)) >= threshold).float()
-            outputs = Transformer.remove_short_fragments(
+            outputs = torch.Tensor(Transformer.remove_short_fragments(
                 Transformer.fill_segment_gaps(outputs.cpu().numpy())
-            ).to(device)
+            )).to(device)
 
             loss = criterion(outputs, midi)
             loss.backward()

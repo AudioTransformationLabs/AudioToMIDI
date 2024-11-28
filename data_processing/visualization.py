@@ -2,6 +2,8 @@ import pretty_midi
 import matplotlib.pyplot as plt
 import librosa
 
+from data_processing.transformer import Transformer
+
 def plot_midi_annotation(midi_path):
     midi_data = pretty_midi.PrettyMIDI(midi_path)
 
@@ -47,4 +49,6 @@ def plot_spectrogram(specgram, title=None, ylabel="freq_bin", ax=None, path: str
 
 # Example usage
 # plot_piano_roll(Transformer.midi_to_piano_roll('data/test/midi/00_BN3-154-E_comp.mid'))
+# plot_spectrogram(Transformer.transform_audio('data/test/audio/00_BN3-154-E_comp_hex.wav', Transformer.mfcc_transform())[0], path="results/mfcc_spectrogram_test.png")
+# plot_spectrogram(Transformer.transform_audio('data/test/audio/00_BN3-154-E_comp_hex.wav', Transformer.mel_spec_transform())[0], path="results/mel_spectrogram_test.png")
 

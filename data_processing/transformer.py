@@ -123,3 +123,14 @@ class Transformer:
                         prev_segment_end = time_frame - 1 if predicted_midi[batch, note, time_frame] == 0 else None
 
         return predicted_midi
+    
+if __name__ == "__main__":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    audio_path = "data/test/audio/00_BN3-154-E_comp_hex.wav"
+    
+    spectrogram = Transformer.transform_audio(audio_path, Transformer.mfcc_transform())
+    print(spectrogram.shape)
+
+    spectrogram = Transformer.transform_audio(audio_path, Transformer.mel_spec_transform())
+    print(spectrogram.shape)
