@@ -29,7 +29,7 @@ def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
         optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'])
         return model, optimizer
     else:
-        model = load_model(model_path)
+        model = load_model(model_path, device)
         optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'])
         optimizer.load_state_dict(torch.load(optimizer_path, weights_only=True))
         return model, optimizer
