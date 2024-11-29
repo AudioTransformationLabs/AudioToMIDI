@@ -36,8 +36,8 @@ def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
 
 def train_model(model, learning_rate, dropout, dataloader, optimizer, device, start_epoch=0, epochs=NUM_EPOCHS, threshold=0.7):
     print(f'Learning Rate: {learning_rate}, Dropout: {dropout}')
+    model.train()
     for epoch in range(start_epoch, start_epoch + epochs):
-        model.train()
         curr_loss = 0.0
         for audio, midi in tqdm(dataloader, desc=f"Epoch {epoch + 1} / {start_epoch + epochs}", total=len(dataloader)):
             audio, midi = audio.to(device), midi.to(device)
@@ -50,9 +50,6 @@ def train_model(model, learning_rate, dropout, dataloader, optimizer, device, st
 
             outputs = model(audio)
             outputs = (torch.sigmoid(model(audio)) >= threshold).float()
-            outputs = torch.Tensor(Transformer.remove_short_fragments(
-                Transformer.fill_segment_gaps(outputs.cpu().numpy())
-            )).to(device)
 
             loss = criterion(outputs, midi)
             loss.requires_grad = True
@@ -71,7 +68,7 @@ if __name__ == "__main__":
         if FEATURE_TYPE == "mel_spec"
         else Transformer.mfcc_transform()
     )
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using {device} to run model training")
 
     train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
@@ -80,8 +77,8 @@ if __name__ == "__main__":
     test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    LEARNING_RATES = [0.0001, 0.001, 0.01]
-    DROPOUTS = [1, 0.5, 0.1]
+    LEARNING_RATES = [0.001]
+    DROPOUTS = [0.5]
     best_model = {}
     best_f1 = float("-inf")
 
@@ -94,7 +91,6 @@ if __name__ == "__main__":
                 device
             )
 
-            # TODO: Obtain start_epoch from model checkpoint state dict
             trained_model = train_model(
                 model, learning_rate, dropout, train_loader, optimizer, start_epoch=100, epochs=NUM_EPOCHS
             )

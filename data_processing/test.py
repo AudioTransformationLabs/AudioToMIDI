@@ -12,7 +12,7 @@ if __name__ == "__main__":
     MIDI_PATH = f"{TEST_MIDI_PATH}/00_BN3-154-E_comp.mid"
 
     transform = Transformer.mel_spec_transform()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
 
     audio_chunks, midi_chunks = Transformer.split_audio_midi_pair(AUDIO_PATH, MIDI_PATH, transform, CHUNK_LENGTH, HOP_LENGTH)
 

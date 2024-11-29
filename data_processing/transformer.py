@@ -125,7 +125,7 @@ class Transformer:
         return predicted_midi
     
 if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
 
     audio_path = "data/test/audio/00_BN3-154-E_comp_hex.wav"
     
