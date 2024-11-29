@@ -10,7 +10,6 @@ from .constants import (
     BATCH_SIZE,
     CHUNK_LENGTH,
     FEATURE_TYPE,
-    LEARNING_RATE,
     MODEL_NAME,
     NUM_EPOCHS,
     TRAIN_AUDIO_PATH,
@@ -31,10 +30,10 @@ def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
     else:
         model = load_model(model_path, device)
         optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'])
-        optimizer.load_state_dict(torch.load(optimizer_path, weights_only=True))
+        optimizer.load_state_dict(torch.load(optimizer_path, map_location=device, weights_only=True))
         return model, optimizer
     
-def load_dataset_if_exists(train_data_path, test_data_path):
+def load_dataset_if_exists(train_data_path, test_data_path, device):
     if not os.path.exists(train_data_path) or not os.path.exists(test_data_path):
         transform = (
             Transformer.mel_spec_transform()
@@ -47,8 +46,8 @@ def load_dataset_if_exists(train_data_path, test_data_path):
         torch.save(test_dataset, test_data_path)
         return train_dataset, test_dataset
     else:
-        train_dataset = torch.load(train_data_path)
-        test_dataset = torch.load(test_data_path)
+        train_dataset = torch.load(train_data_path, map_location=device)
+        test_dataset = torch.load(test_data_path, map_location=device)
         return train_dataset, test_dataset
 
 def train_model(model, learning_rate, dropout, dataloader, optimizer, device, start_epoch=0, epochs=NUM_EPOCHS, threshold=0.5):
@@ -88,7 +87,7 @@ if __name__ == "__main__":
     device = torch.device("mps" if torch.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using {device} to run model training")
 
-    train_dataset, test_dataset = load_dataset_if_exists("data/train_dataset.pth", "data/test_dataset.pth")
+    train_dataset, test_dataset = load_dataset_if_exists("data/train_dataset.pth", "data/test_dataset.pth", device)
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
@@ -107,7 +106,7 @@ if __name__ == "__main__":
             )
 
             trained_model = train_model(
-                model, learning_rate, dropout, train_loader, optimizer, start_epoch=100, epochs=NUM_EPOCHS
+                model, learning_rate, dropout, train_loader, optimizer, start_epoch=100, epochs=NUM_EPOCHS, device=device
             )
             torch.save(trained_model.state_dict(), f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}.pth")
             torch.save(optimizer.state_dict(), f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}_optimizer.pth")
