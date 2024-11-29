@@ -33,8 +33,25 @@ def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
         optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'])
         optimizer.load_state_dict(torch.load(optimizer_path, weights_only=True))
         return model, optimizer
+    
+def load_dataset_if_exists(train_data_path, test_data_path):
+    if not os.path.exists(train_data_path) or not os.path.exists(test_data_path):
+        transform = (
+            Transformer.mel_spec_transform()
+            if FEATURE_TYPE == "mel_spec"
+            else Transformer.mfcc_transform()
+        )
+        train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
+        test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
+        torch.save(train_dataset, train_data_path)
+        torch.save(test_dataset, test_data_path)
+        return train_dataset, test_dataset
+    else:
+        train_dataset = torch.load(train_data_path)
+        test_dataset = torch.load(test_data_path)
+        return train_dataset, test_dataset
 
-def train_model(model, learning_rate, dropout, dataloader, optimizer, device, start_epoch=0, epochs=NUM_EPOCHS, threshold=0.7):
+def train_model(model, learning_rate, dropout, dataloader, optimizer, device, start_epoch=0, epochs=NUM_EPOCHS, threshold=0.5):
     print(f'Learning Rate: {learning_rate}, Dropout: {dropout}')
     model.train()
     for epoch in range(start_epoch, start_epoch + epochs):
@@ -71,10 +88,8 @@ if __name__ == "__main__":
     device = torch.device("mps" if torch.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using {device} to run model training")
 
-    train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
+    train_dataset, test_dataset = load_dataset_if_exists("data/train_dataset.pth", "data/test_dataset.pth")
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-
-    test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     LEARNING_RATES = [0.001]

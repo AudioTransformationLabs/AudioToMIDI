@@ -24,7 +24,7 @@ def load_model(model_path, device):
     model.load_state_dict(torch.load(model_path, map_location='cpu', weights_only=True))
     return model.to(device)
 
-def evaluate_model(model, dataloader, device, threshold=0.7):
+def evaluate_model(model, dataloader, device, threshold=0.5):
     total_loss = 0.0
     precision, recall, f1 = 0.0, 0.0, 0.0
 
