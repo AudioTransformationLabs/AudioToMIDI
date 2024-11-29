@@ -4,6 +4,7 @@ import json
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.nn.functional import sigmoid
 from tqdm import tqdm
 
 from .constants import (
@@ -65,7 +66,7 @@ def train_model(model, learning_rate, dropout, dataloader, optimizer, device, st
             criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight.unsqueeze(1))
 
             outputs = model(audio)
-            outputs = (torch.sigmoid(model(audio)) >= threshold).float()
+            outputs = (sigmoid(model(audio)) >= threshold).float()
 
             loss = criterion(outputs, midi)
             loss.requires_grad = True
