@@ -20,4 +20,5 @@ BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 NUM_EPOCHS = 50
 DROPOUT = 0.5
-FEATURE_TYPE = "mel_spec"  # or "mfcc"
+# FEATURE_TYPE = "mel_spec"
+FEATURE_TYPE = "mfcc"
