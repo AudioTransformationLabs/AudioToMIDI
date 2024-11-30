@@ -36,7 +36,7 @@ def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
         return model, optimizer
 
 
-def load_dataset_if_exists(train_data_path, test_data_path):
+def load_dataset_if_exists(train_data_path, test_data_path, device):
     if not os.path.exists(train_data_path) or not os.path.exists(test_data_path):
         transform = (
             Transformer.mel_spec_transform()
