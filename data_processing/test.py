@@ -1,3 +1,4 @@
+import argparse
 import os
 import torch
 from more_itertools import numeric_range
@@ -22,6 +23,49 @@ from .visualization import plot_piano_roll, plot_spectrogram
 from .evaluate import load_model
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Test the model on a sample audio file.")
+    parser.add_argument(
+        "--test_audio_path",
+        type=str,
+        default=TEST_AUDIO_PATH,
+        help="Path to the test audio dataset.",
+    )
+    parser.add_argument(
+        "--test_midi_path",
+        type=str,
+        default=TEST_MIDI_PATH,
+        help="Path to the test midi dataset.",
+    )
+    parser.add_argument(
+        "--chunk_length",
+        type=int,
+        default=CHUNK_LENGTH,
+        help="Length of the audio chunks used for testing.",
+    )
+    parser.add_argument(
+        "--hop_length",
+        type=int,
+        default=HOP_LENGTH,
+        help="Hop length used for splitting the audio and MIDI files.",
+    )
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        default=LEARNING_RATE,
+        help="Learning rate used during training.",
+    )
+    parser.add_argument(
+        "--dropout", type=float, default=DROPOUT, help="Dropout used during training."
+    )
+    args = parser.parse_args()
+
+    CHUNK_LENGTH = args.chunk_length
+    HOP_LENGTH = args.hop_length
+    LEARNING_RATE = args.learning_rate
+    DROPOUT = args.dropout
+    TEST_AUDIO_PATH = args.test_audio_path
+    TEST_MIDI_PATH = args.test_midi_path
+
     AUDIO_PATH = f"{TEST_AUDIO_PATH}/00_BN3-154-E_comp_hex.wav"
     MIDI_PATH = f"{TEST_MIDI_PATH}/00_BN3-154-E_comp.mid"
 

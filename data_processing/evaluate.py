@@ -1,3 +1,4 @@
+import argparse
 import os
 import torch
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -69,6 +70,51 @@ def evaluate_model(model, dataloader):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Evaluate the model on the test dataset.")
+    parser.add_argument(
+        "--feature_type",
+        type=str,
+        default=FEATURE_TYPE,
+        choices=["mel_spec", "mfcc"],
+        help="Feature type used for training the model.",
+    )
+    parser.add_argument(
+        "--test_audio_path",
+        type=str,
+        default=TEST_AUDIO_PATH,
+        help="Path to the test audio dataset.",
+    )
+    parser.add_argument(
+        "--test_midi_path",
+        type=str,
+        default=TEST_MIDI_PATH,
+        help="Path to the test midi dataset.",
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=BATCH_SIZE,
+        help="Batch size used during training.",
+    )
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        default=LEARNING_RATE,
+        help="Learning rate used during training.",
+    )
+    parser.add_argument(
+        "--dropout", type=float, default=DROPOUT, help="Dropout used during training."
+    )
+    args = parser.parse_args()
+
+    FEATURE_TYPE = args.feature_type
+    TEST_AUDIO_PATH = args.test_audio_path
+    TEST_MIDI_PATH = args.test_midi_path
+    BATCH_SIZE = args.batch_size
+
+    LEARNING_RATE = args.learning_rate
+    DROPOUT = args.dropout
+
     transform = (
         mel_spec_transform() if FEATURE_TYPE == "mel_spec" else mfcc_transform()
     )

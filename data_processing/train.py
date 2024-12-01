@@ -3,6 +3,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import argparse
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -10,7 +11,9 @@ from .constants import (
     BATCH_SIZE,
     CHUNK_LENGTH,
     DEVICE,
+    DROPOUT,
     FEATURE_TYPE,
+    LEARNING_RATE,
     NUM_EPOCHS,
     TEST_AUDIO_PATH,
     TEST_MIDI_PATH,
@@ -100,6 +103,30 @@ def train_model(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Train Audio to MIDI model")
+    parser.add_argument("--learning_rate", type=float, default=LEARNING_RATE, help="Learning rate for training")
+    parser.add_argument("--dropout", type=float, default=DROPOUT, help="Dropout rate for the model")
+    parser.add_argument("--batch_size", type=int, default=BATCH_SIZE, help="Batch size for training")
+    parser.add_argument("--num_epochs", type=int, default=NUM_EPOCHS, help="Number of epochs for training")
+    parser.add_argument("--feature_type", type=str, default=FEATURE_TYPE, choices=["mel_spec", "mfcc"], help="Feature type for audio transformation")
+    parser.add_argument("--train_audio_path", type=str, default=TRAIN_AUDIO_PATH, help="Path to training audio files")
+    parser.add_argument("--train_midi_path", type=str, default=TRAIN_MIDI_PATH, help="Path to training MIDI files")
+    parser.add_argument("--test_audio_path", type=str, default=TEST_AUDIO_PATH, help="Path to testing audio files")
+    parser.add_argument("--test_midi_path", type=str, default=TEST_MIDI_PATH, help="Path to testing MIDI files")
+
+    args = parser.parse_args()
+
+    BATCH_SIZE = args.batch_size
+    NUM_EPOCHS = args.num_epochs
+    FEATURE_TYPE = args.feature_type
+    TRAIN_AUDIO_PATH = args.train_audio_path
+    TRAIN_MIDI_PATH = args.train_midi_path
+    TEST_AUDIO_PATH = args.test_audio_path
+    TEST_MIDI_PATH = args.test_midi_path
+
+    LEARNING_RATES = [args.learning_rate]
+    DROPOUTS = [args.dropout]
+
     transform = (
         mel_spec_transform()
         if FEATURE_TYPE == "mel_spec"
@@ -119,8 +146,6 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    LEARNING_RATES = [0.001]
-    DROPOUTS = [0.5]
     best_model = {}
     best_f1 = float("-inf")
 
