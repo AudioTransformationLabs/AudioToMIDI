@@ -23,7 +23,7 @@ if __name__ == "__main__":
         os.makedirs("results", exist_ok=True)
         plot_spectrogram(audio[0], title="Mel Spectrogram", path="results/mel_spectrogram.png")
         audio = audio.reshape(1, 1, 128, 1024).to(device)
-        for t in numeric_range(0.5, 0.95, 0.05):
+        for t in numeric_range(0.1, 0.95, 0.1):
             predicted_piano_roll = (sigmoid(model(audio)[0]) >= t).float()
             predicted_piano_roll = Transformer.remove_short_fragments(Transformer.fill_segment_gaps(predicted_piano_roll.cpu().numpy().reshape(1, N_MELS, CHUNK_LENGTH))).reshape(N_MELS, CHUNK_LENGTH)
             plot_piano_roll(predicted_piano_roll, path=f"results/predicted_piano_roll_{t}.png")

@@ -1,9 +1,10 @@
-import os
-import torch
 import json
-from torch._prims_common import device_or_default
+import os
+
+import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.nn.functional import sigmoid
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -11,13 +12,12 @@ from .constants import (
     BATCH_SIZE,
     CHUNK_LENGTH,
     FEATURE_TYPE,
-    LEARNING_RATE,
     MODEL_NAME,
     NUM_EPOCHS,
-    TRAIN_AUDIO_PATH,
-    TRAIN_MIDI_PATH,
     TEST_AUDIO_PATH,
     TEST_MIDI_PATH,
+    TRAIN_AUDIO_PATH,
+    TRAIN_MIDI_PATH,
 )
 from .dataset import AudioMidiDataset
 from .evaluate import evaluate_model, load_model
@@ -33,16 +33,14 @@ def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
     else:
         model = load_model(model_path, device)
         optimizer = optim.Adam(model.parameters(), lr=params["learning_rate"])
-        optimizer.load_state_dict(torch.load(optimizer_path, weights_only=True))
+        optimizer.load_state_dict(torch.load(optimizer_path, map_location=device, weights_only=True))
         return model, optimizer
 
 
 def load_dataset_if_exists(train_data_path, test_data_path):
     if not os.path.exists(train_data_path) or not os.path.exists(test_data_path):
         transform = (
-            Transformer.mel_spec_transform()
-            if FEATURE_TYPE == "mel_spec"
-            else Transformer.mfcc_transform()
+            Transformer.mel_spec_transform() if FEATURE_TYPE == "mel_spec" else Transformer.mfcc_transform()
         )
         train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
         test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
@@ -50,8 +48,8 @@ def load_dataset_if_exists(train_data_path, test_data_path):
         # torch.save(test_dataset, test_data_path)
         return train_dataset, test_dataset
     else:
-        train_dataset = torch.load(train_data_path)
-        test_dataset = torch.load(test_data_path)
+        train_dataset = torch.load(train_data_path, map_location=device)
+        test_dataset = torch.load(test_data_path, map_location=device)
         return train_dataset, test_dataset
 
 
@@ -93,9 +91,7 @@ def train_model(
 
             curr_loss += loss.item()
 
-        print(
-            f"Epoch {epoch + 1}/{start_epoch + epochs}, Loss: {curr_loss / len(dataloader)}"
-        )
+        print(f"Epoch {epoch + 1}/{start_epoch + epochs}, Loss: {curr_loss / len(dataloader)}")
 
     return model
 
@@ -103,22 +99,18 @@ def train_model(
 if __name__ == "__main__":
 
     transform = (
-        Transformer.mel_spec_transform()
-        if FEATURE_TYPE == "mel_spec"
-        else Transformer.mfcc_transform()
+        Transformer.mel_spec_transform() if FEATURE_TYPE == "mel_spec" else Transformer.mfcc_transform()
     )
     start_num_epochs = None
     with open("./metadata.json", "r") as f:
         start_num_epochs = json.load(f)[FEATURE_TYPE]["epochs"]
     device = torch.device(
-        "mps"
-        if torch.mps.is_available()
-        else "cuda" if torch.cuda.is_available() else "cpu"
+        "mps" if torch.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
     )
     print(f"Using {device} to run model training")
 
     train_dataset, test_dataset = load_dataset_if_exists(
-        "data/train_dataset.pth", "data/test_dataset.pth"
+        f"data/{FEATURE_TYPE}_train_dataset.pth", f"data/{FEATURE_TYPE}_test_dataset.pth", device
     )
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
