@@ -1,10 +1,11 @@
-import os
-import torch
 import json
+import os
+
+import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 from torch.nn.functional import sigmoid
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from .constants import (
@@ -13,10 +14,10 @@ from .constants import (
     FEATURE_TYPE,
     MODEL_NAME,
     NUM_EPOCHS,
-    TRAIN_AUDIO_PATH,
-    TRAIN_MIDI_PATH,
     TEST_AUDIO_PATH,
     TEST_MIDI_PATH,
+    TRAIN_AUDIO_PATH,
+    TRAIN_MIDI_PATH,
 )
 from .dataset import AudioMidiDataset
 from .evaluate import evaluate_model, load_model
@@ -31,8 +32,10 @@ def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
         return model, optimizer
     else:
         model = load_model(model_path, device)
-        optimizer = optim.Adam(model.parameters(), lr=params['learning_rate'])
-        optimizer.load_state_dict(torch.load(optimizer_path, map_location=device, weights_only=True))
+        optimizer = optim.Adam(model.parameters(), lr=params["learning_rate"])
+        optimizer.load_state_dict(
+            torch.load(optimizer_path, map_location=device, weights_only=True)
+        )
         return model, optimizer
 
 
@@ -45,8 +48,8 @@ def load_dataset_if_exists(train_data_path, test_data_path, device):
         )
         train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
         test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
-        torch.save(train_dataset, train_data_path)
-        torch.save(test_dataset, test_data_path)
+        # torch.save(train_dataset, train_data_path)
+        # torch.save(test_dataset, test_data_path)
         return train_dataset, test_dataset
     else:
         train_dataset = torch.load(train_data_path, map_location=device)
@@ -83,10 +86,10 @@ def train_model(
             criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight.unsqueeze(1))
 
             outputs = model(audio)
-            outputs = (sigmoid(model(audio)) >= threshold).float()
 
             loss = criterion(outputs, midi)
-            loss.requires_grad = True
+            # loss.requires_grad = True
+
             loss.backward()
             optimizer.step()
 
@@ -100,11 +103,15 @@ def train_model(
 
 
 if __name__ == "__main__":
+
     transform = (
         Transformer.mel_spec_transform()
         if FEATURE_TYPE == "mel_spec"
         else Transformer.mfcc_transform()
     )
+    start_num_epochs = None
+    with open("./metadata.json", "r") as f:
+        start_num_epochs = json.load(f)[FEATURE_TYPE]["epochs"]
     device = torch.device(
         "mps"
         if torch.mps.is_available()
@@ -115,7 +122,7 @@ if __name__ == "__main__":
     train_dataset, test_dataset = load_dataset_if_exists(
         f"data/{FEATURE_TYPE}_train_dataset.pth",
         f"data/{FEATURE_TYPE}_test_dataset.pth",
-        device
+        device=device,
     )
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
@@ -140,7 +147,7 @@ if __name__ == "__main__":
                 dropout,
                 train_loader,
                 optimizer,
-                start_epoch=100,
+                start_epoch=start_num_epochs,
                 epochs=NUM_EPOCHS,
                 device=device,
             )

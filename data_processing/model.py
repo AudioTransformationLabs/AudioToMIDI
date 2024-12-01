@@ -1,8 +1,9 @@
 import torch.nn as nn
-from .constants import CHUNK_LENGTH
+from .constants import CHUNK_LENGTH, DROPOUT
+
 
 class AudioToMidiCNN(nn.Module):
-    def __init__(self, input_channels=1, dropout=0.3):
+    def __init__(self, input_channels=1, dropout=DROPOUT):
         super(AudioToMidiCNN, self).__init__()
 
         # Define (Conv2D + BatchNorm2D + ReLU + MaxPool2D) blocks
@@ -38,6 +39,7 @@ class AudioToMidiCNN(nn.Module):
 
         # Fully connected layer for output
         self.fc = nn.Linear(self.lstm_input_size * 2, CHUNK_LENGTH)
+        self.sig = nn.Sigmoid()
 
     def forward(self, x):
         # Input Shape: (batch_size, 1, 128, 1024)
@@ -53,5 +55,8 @@ class AudioToMidiCNN(nn.Module):
         x = self.dropout(x)
 
         x = self.fc(x)  # Shape: (batch_size, CHUNK_LENGTH, num_classes)
+
+        x = self.sig(x)
+        # x = (self.sig(x) >= self.thres).float()
 
         return x

@@ -5,6 +5,8 @@ from tqdm import tqdm
 from .constants import CHUNK_LENGTH, HOP_LENGTH
 from .transformer import Transformer
 
+DATA_LIMIT = 1e9
+
 
 class AudioMidiDataset(Dataset):
     def __init__(self, audio_path, midi_path, transform):
@@ -28,7 +30,8 @@ class AudioMidiDataset(Dataset):
             self.data.extend(list(zip(audio_chunks, midi_chunks)))
 
     def __len__(self):
-        return len(self.data)
+        # return len(self.data)
+        return min(DATA_LIMIT, len(self.data))
 
     def __getitem__(self, idx):
         return self.data[idx]
