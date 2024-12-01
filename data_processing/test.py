@@ -14,6 +14,7 @@ from .constants import (
 )
 from .transform import (
     get_model_path,
+    mfcc_transform,
     remove_short_fragments,
     fill_segment_gaps,
     mel_spec_transform,
@@ -35,6 +36,13 @@ if __name__ == "__main__":
         type=str,
         default=TEST_MIDI_PATH,
         help="Path to the test midi dataset.",
+    )
+    parser.add_argument(
+        "--feature_type",
+        type=str,
+        default="mel_spec",
+        choices=["mel_spec", "mfcc"],
+        help="Feature type used for training the model.",
     )
     parser.add_argument(
         "--chunk_length",
@@ -65,11 +73,12 @@ if __name__ == "__main__":
     DROPOUT = args.dropout
     TEST_AUDIO_PATH = args.test_audio_path
     TEST_MIDI_PATH = args.test_midi_path
+    FEATURE_TYPE = args.feature_type
 
     AUDIO_PATH = f"{TEST_AUDIO_PATH}/00_BN3-154-E_comp_hex.wav"
     MIDI_PATH = f"{TEST_MIDI_PATH}/00_BN3-154-E_comp.mid"
 
-    transform = mel_spec_transform()
+    transform = mel_spec_transform() if FEATURE_TYPE == "mel_spec" else mfcc_transform()
 
     audio_chunks, midi_chunks = split_audio_midi_pair(AUDIO_PATH, MIDI_PATH, transform, CHUNK_LENGTH, HOP_LENGTH)
 
@@ -79,7 +88,7 @@ if __name__ == "__main__":
     actual_piano_roll = midi.cpu().numpy()
     with torch.no_grad():
         os.makedirs("results", exist_ok=True)
-        plot_spectrogram(audio[0], title="Mel Spectrogram", path="results/mel_spectrogram.png")
+        plot_spectrogram(audio[0], title="Spectrogram", path=f"results/{FEATURE_TYPE}.png")
         audio = audio.reshape(1, 1, 128, 1024).to(DEVICE)
         for t in numeric_range(0.1, 0.95, 0.1):
             predicted_piano_roll = (torch.sigmoid(model(audio)[0]) >= t).float()
