@@ -82,7 +82,7 @@ if __name__ == "__main__":
         plot_spectrogram(audio[0], title="Mel Spectrogram", path="results/mel_spectrogram.png")
         audio = audio.reshape(1, 1, 128, 1024).to(DEVICE)
         for t in numeric_range(0.1, 0.95, 0.1):
-            predicted_piano_roll = (model(audio)[0] >= t).float()
+            predicted_piano_roll = (torch.sigmoid(model(audio)[0]) >= t).float()
             predicted_piano_roll = remove_short_fragments(fill_segment_gaps(predicted_piano_roll.cpu().numpy())).reshape(N_MELS, CHUNK_LENGTH)
             plot_piano_roll(predicted_piano_roll, path=f"results/predicted_piano_roll_{t:.1f}.png")
 

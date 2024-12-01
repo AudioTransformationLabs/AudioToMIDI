@@ -12,7 +12,6 @@ from .constants import (
     DROPOUT,
     FEATURE_TYPE,
     LEARNING_RATE,
-    MODEL_NAME,
     TEST_AUDIO_PATH,
     TEST_MIDI_PATH,
     THRESHOLD,
@@ -50,7 +49,7 @@ def evaluate_model(model, dataloader):
             total_loss += loss.item()
 
             midi_chunks = midi_chunks.cpu().numpy().reshape(-1, 128)
-            outputs = (outputs >= THRESHOLD).float().cpu().numpy().reshape(-1, 128)
+            outputs = (torch.sigmoid(outputs) >= THRESHOLD).float().cpu().numpy().reshape(-1, 128)
 
             precision = precision_score(midi_chunks, outputs, zero_division=0, average="samples")
             recall = recall_score(midi_chunks, outputs, zero_division=0, average="samples")
