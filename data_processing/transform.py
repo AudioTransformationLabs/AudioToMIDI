@@ -3,13 +3,13 @@ import torchaudio
 from torchaudio.transforms import MelSpectrogram, MFCC
 from torch.nn.functional import pad
 from pretty_midi import PrettyMIDI
-from .constants import FEATURE_TYPE, MODEL_NAME, SAMPLE_RATE, N_FFT, N_MFCC, N_MELS, HOP_LENGTH
+from .constants import MODEL_NAME, SAMPLE_RATE, N_FFT, N_MFCC, N_MELS, HOP_LENGTH
 
-def get_model_path(learning_rate, dropout):
-    return f"models/{MODEL_NAME}_{FEATURE_TYPE}_LR={learning_rate}_DROPOUT={dropout}.pth"
+def get_model_path(feature_type, learning_rate, dropout, prefix=''):
+    return f"{prefix}models/{MODEL_NAME}_{feature_type}_LR={learning_rate}_DROPOUT={dropout}.pth"
 
-def get_optimizer_path(learning_rate, dropout):
-    return f"models/{MODEL_NAME}_{FEATURE_TYPE}_LR={learning_rate}_DROPOUT={dropout}_optimizer.pth"
+def get_optimizer_path(feature_type, learning_rate, dropout, prefix=''):
+    return f"{prefix}models/{MODEL_NAME}_{feature_type}_LR={learning_rate}_DROPOUT={dropout}_optimizer.pth"
 
 def mfcc_transform(
     sample_rate=SAMPLE_RATE,

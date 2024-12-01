@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     audio_chunks, midi_chunks = split_audio_midi_pair(AUDIO_PATH, MIDI_PATH, transform, CHUNK_LENGTH, HOP_LENGTH)
 
-    model_file = get_model_path(LEARNING_RATE, DROPOUT)
+    model_file = get_model_path(FEATURE_TYPE, LEARNING_RATE, DROPOUT)
     model = load_model(model_file)
     audio, midi = audio_chunks[0], midi_chunks[0]
     actual_piano_roll = midi.cpu().numpy()

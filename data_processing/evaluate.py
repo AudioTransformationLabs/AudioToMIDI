@@ -121,7 +121,7 @@ if __name__ == "__main__":
     test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    model = load_model(get_model_path(LEARNING_RATE, DROPOUT))
+    model = load_model(get_model_path(FEATURE_TYPE, LEARNING_RATE, DROPOUT))
 
     results = evaluate_model(model, test_loader)
     print("Evaluation Metrics:", results)

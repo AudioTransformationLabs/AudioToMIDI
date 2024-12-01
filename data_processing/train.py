@@ -152,8 +152,8 @@ if __name__ == "__main__":
     for learning_rate in LEARNING_RATES:
         for dropout in DROPOUTS:
             model, optimizer = load_checkpoint_if_exists(
-                get_model_path(learning_rate, dropout),
-                get_optimizer_path(learning_rate, dropout),
+                get_model_path(FEATURE_TYPE, learning_rate, dropout),
+                get_optimizer_path(FEATURE_TYPE, learning_rate, dropout),
                 { "learning_rate": learning_rate, "dropout": dropout },
             )
 
