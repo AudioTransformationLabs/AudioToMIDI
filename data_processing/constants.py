@@ -1,8 +1,10 @@
+import torch
+
 # Audio Processing Parameters
 SAMPLE_RATE = 44100
 N_MELS = 128
 N_FFT = 2048
-N_MFCC = 128
+N_MFCC = 13
 HOP_LENGTH = 512
 CHUNK_LENGTH = 1024
 
@@ -20,5 +22,7 @@ BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 NUM_EPOCHS = 25
 DROPOUT = 0.5
-FEATURE_TYPE = "mel_spec"  # or "mfcc"
-THRES = 0.7
+FEATURE_TYPE = "mel_spec"
+# FEATURE_TYPE = "mfcc"
+THRESHOLD = 0.7
+DEVICE = "mps" if torch.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"

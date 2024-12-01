@@ -3,10 +3,9 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from .constants import CHUNK_LENGTH, HOP_LENGTH
-from .transformer import Transformer
+from .transform import split_audio_midi_pair
 
 DATA_LIMIT = 1e9
-
 
 class AudioMidiDataset(Dataset):
     def __init__(self, audio_path, midi_path, transform):
@@ -24,13 +23,12 @@ class AudioMidiDataset(Dataset):
             desc="Processing audio-midi pairs",
             total=len(self.audio_files),
         ):
-            audio_chunks, midi_chunks = Transformer.split_audio_midi_pair(
+            audio_chunks, midi_chunks = split_audio_midi_pair(
                 audio_file, midi_file, self.transform, CHUNK_LENGTH, HOP_LENGTH
             )
             self.data.extend(list(zip(audio_chunks, midi_chunks)))
 
     def __len__(self):
-        # return len(self.data)
         return min(DATA_LIMIT, len(self.data))
 
     def __getitem__(self, idx):

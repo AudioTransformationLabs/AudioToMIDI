@@ -1,18 +1,16 @@
 import json
 import os
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.nn.functional import sigmoid
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from .constants import (
     BATCH_SIZE,
     CHUNK_LENGTH,
+    DEVICE,
     FEATURE_TYPE,
-    MODEL_NAME,
     NUM_EPOCHS,
     TEST_AUDIO_PATH,
     TEST_MIDI_PATH,
@@ -22,38 +20,42 @@ from .constants import (
 from .dataset import AudioMidiDataset
 from .evaluate import evaluate_model, load_model
 from .model import AudioToMidiCNN
-from .transformer import Transformer
+from .transform import mel_spec_transform, mfcc_transform, get_model_path, get_optimizer_path
 
-
-def load_checkpoint_if_exists(model_path, optimizer_path, params, device):
+def load_checkpoint_if_exists(model_path, optimizer_path, params):
     if not os.path.exists(model_path) or not os.path.exists(optimizer_path):
-        model = AudioToMidiCNN(dropout=params["dropout"]).to(device)
+        print(f"Model not found at {model_path}, creating new model.")
+        model = AudioToMidiCNN(dropout=params["dropout"]).to(DEVICE)
         optimizer = optim.Adam(model.parameters(), lr=params["learning_rate"])
         return model, optimizer
     else:
-        model = load_model(model_path, device)
+        model = load_model(model_path)
+        print(f"Model loaded from {model_path}")
         optimizer = optim.Adam(model.parameters(), lr=params["learning_rate"])
         optimizer.load_state_dict(
-            torch.load(optimizer_path, map_location=device, weights_only=True)
+            torch.load(optimizer_path, map_location=DEVICE, weights_only=True)
         )
         return model, optimizer
 
 
-def load_dataset_if_exists(train_data_path, test_data_path, device):
+def load_dataset_if_exists(train_data_path, test_data_path):
     if not os.path.exists(train_data_path) or not os.path.exists(test_data_path):
         transform = (
-            Transformer.mel_spec_transform()
+            mel_spec_transform()
             if FEATURE_TYPE == "mel_spec"
-            else Transformer.mfcc_transform()
+            else mfcc_transform()
         )
         train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
+        torch.save(train_dataset, train_data_path)
+        print("Train dataset saved successfully.")
         test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
-        # torch.save(train_dataset, train_data_path)
-        # torch.save(test_dataset, test_data_path)
+        torch.save(test_dataset, test_data_path)
+        print("Test dataset saved successfully.")
         return train_dataset, test_dataset
     else:
-        train_dataset = torch.load(train_data_path, map_location=device)
-        test_dataset = torch.load(test_data_path, map_location=device)
+        train_dataset = torch.load(train_data_path, map_location=DEVICE)
+        test_dataset = torch.load(test_data_path, map_location=DEVICE)
+        print("Loaded train and test datasets successfully.")
         return train_dataset, test_dataset
 
 
@@ -63,21 +65,18 @@ def train_model(
     dropout,
     dataloader,
     optimizer,
-    device,
     start_epoch=0,
-    epochs=NUM_EPOCHS,
-    threshold=0.5,
 ):
-    print(f"Learning Rate: {learning_rate}, Dropout: {dropout}")
+    print(f"Training with Learning Rate: {learning_rate}, Dropout: {dropout}")
     model.train()
-    for epoch in range(start_epoch, start_epoch + epochs):
+    for epoch in range(start_epoch, start_epoch + NUM_EPOCHS):
         curr_loss = 0.0
         for audio, midi in tqdm(
             dataloader,
-            desc=f"Epoch {epoch + 1} / {start_epoch + epochs}",
+            desc=f"Epoch {epoch + 1} / {start_epoch + NUM_EPOCHS}",
             total=len(dataloader),
         ):
-            audio, midi = audio.to(device), midi.to(device)
+            audio, midi = audio.to(DEVICE), midi.to(DEVICE)
             optimizer.zero_grad()
 
             pos_samples = midi.sum(dim=(0, 2))
@@ -88,41 +87,34 @@ def train_model(
             outputs = model(audio)
 
             loss = criterion(outputs, midi)
-            # loss.requires_grad = True
-
             loss.backward()
             optimizer.step()
 
             curr_loss += loss.item()
 
         print(
-            f"Epoch {epoch + 1}/{start_epoch + epochs}, Loss: {curr_loss / len(dataloader)}"
+            f"Loss: {curr_loss / len(dataloader)}"
         )
 
     return model
 
 
 if __name__ == "__main__":
-
     transform = (
-        Transformer.mel_spec_transform()
+        mel_spec_transform()
         if FEATURE_TYPE == "mel_spec"
-        else Transformer.mfcc_transform()
+        else mfcc_transform()
     )
-    start_num_epochs = None
+
+    start_epoch = 0
     with open("./metadata.json", "r") as f:
-        start_num_epochs = json.load(f)[FEATURE_TYPE]["epochs"]
-    device = torch.device(
-        "mps"
-        if torch.mps.is_available()
-        else "cuda" if torch.cuda.is_available() else "cpu"
-    )
-    print(f"Using {device} to run model training")
+        start_epoch = json.load(f)[FEATURE_TYPE]["epochs"]
+
+    print(f"Using {DEVICE} to run model training")
 
     train_dataset, test_dataset = load_dataset_if_exists(
         f"data/{FEATURE_TYPE}_train_dataset.pth",
-        f"data/{FEATURE_TYPE}_test_dataset.pth",
-        device=device,
+        f"data/{FEATURE_TYPE}_test_dataset.pth"
     )
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
@@ -135,10 +127,9 @@ if __name__ == "__main__":
     for learning_rate in LEARNING_RATES:
         for dropout in DROPOUTS:
             model, optimizer = load_checkpoint_if_exists(
-                f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}.pth",
-                f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}_optimizer.pth",
-                {"learning_rate": learning_rate, "dropout": dropout},
-                device,
+                get_model_path(learning_rate, dropout),
+                get_optimizer_path(learning_rate, dropout),
+                { "learning_rate": learning_rate, "dropout": dropout },
             )
 
             trained_model = train_model(
@@ -147,20 +138,18 @@ if __name__ == "__main__":
                 dropout,
                 train_loader,
                 optimizer,
-                start_epoch=start_num_epochs,
-                epochs=NUM_EPOCHS,
-                device=device,
+                start_epoch=start_epoch
             )
             torch.save(
                 trained_model.state_dict(),
-                f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}.pth",
+                get_model_path(learning_rate, dropout),
             )
             torch.save(
                 optimizer.state_dict(),
-                f"models/{MODEL_NAME}_melspec_LR={learning_rate}_DROPOUT={dropout}_optimizer.pth",
+                get_optimizer_path(learning_rate, dropout),
             )
 
-            results = evaluate_model(trained_model, test_loader, device)
+            results = evaluate_model(trained_model, test_loader)
             print(f"Results for LR={learning_rate}, Dropout={dropout}: {results}")
 
             if results["f1_score"] >= best_f1:
