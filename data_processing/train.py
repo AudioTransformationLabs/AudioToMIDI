@@ -53,10 +53,10 @@ def load_dataset_if_exists(train_data_path, test_data_path):
             else mfcc_transform()
         )
         train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
-        torch.save(train_dataset, train_data_path)
+        # torch.save(train_dataset, train_data_path)
         print("Train dataset saved successfully.")
         test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
-        torch.save(test_dataset, test_data_path)
+        # torch.save(test_dataset, test_data_path)
         print("Test dataset saved successfully.")
         return train_dataset, test_dataset
     else:
