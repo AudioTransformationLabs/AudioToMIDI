@@ -104,12 +104,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dropout", type=float, default=DROPOUT, help="Dropout used during training."
     )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        default=None,
+        help="Path to the model file to load.",
+    )
     args = parser.parse_args()
 
     FEATURE_TYPE = args.feature_type
     TEST_AUDIO_PATH = args.test_audio_path
     TEST_MIDI_PATH = args.test_midi_path
     BATCH_SIZE = args.batch_size
+    MODEL_PATH = args.model_path or get_model_path(FEATURE_TYPE, LEARNING_RATE, DROPOUT)
 
     LEARNING_RATE = args.learning_rate
     DROPOUT = args.dropout
@@ -121,7 +128,7 @@ if __name__ == "__main__":
     test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    model = load_model(get_model_path(FEATURE_TYPE, LEARNING_RATE, DROPOUT))
+    model = load_model(MODEL_PATH)
 
     results = evaluate_model(model, test_loader)
     print("Evaluation Metrics:", results)

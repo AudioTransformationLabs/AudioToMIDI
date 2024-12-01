@@ -8,6 +8,7 @@ from .constants import (
     DROPOUT,
     HOP_LENGTH,
     LEARNING_RATE,
+    FEATURE_TYPE,
     N_MELS,
     TEST_AUDIO_PATH,
     TEST_MIDI_PATH
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--feature_type",
         type=str,
-        default="mel_spec",
+        default=FEATURE_TYPE,
         choices=["mel_spec", "mfcc"],
         help="Feature type used for training the model.",
     )
@@ -65,6 +66,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dropout", type=float, default=DROPOUT, help="Dropout used during training."
     )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        default=get_model_path(FEATURE_TYPE, LEARNING_RATE, DROPOUT),
+        help="Path to the model file to load.",
+    )
     args = parser.parse_args()
 
     CHUNK_LENGTH = args.chunk_length
@@ -74,6 +81,7 @@ if __name__ == "__main__":
     TEST_AUDIO_PATH = args.test_audio_path
     TEST_MIDI_PATH = args.test_midi_path
     FEATURE_TYPE = args.feature_type
+    MODEL_PATH = args.model_path
 
     AUDIO_PATH = f"{TEST_AUDIO_PATH}/00_BN3-154-E_comp_hex.wav"
     MIDI_PATH = f"{TEST_MIDI_PATH}/00_BN3-154-E_comp.mid"
@@ -82,8 +90,7 @@ if __name__ == "__main__":
 
     audio_chunks, midi_chunks = split_audio_midi_pair(AUDIO_PATH, MIDI_PATH, transform, CHUNK_LENGTH, HOP_LENGTH)
 
-    model_file = get_model_path(FEATURE_TYPE, LEARNING_RATE, DROPOUT)
-    model = load_model(model_file)
+    model = load_model(MODEL_PATH)
     audio, midi = audio_chunks[0], midi_chunks[0]
     actual_piano_roll = midi.cpu().numpy()
     with torch.no_grad():

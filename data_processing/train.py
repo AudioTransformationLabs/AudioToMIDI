@@ -113,6 +113,8 @@ if __name__ == "__main__":
     parser.add_argument("--train_midi_path", type=str, default=TRAIN_MIDI_PATH, help="Path to training MIDI files")
     parser.add_argument("--test_audio_path", type=str, default=TEST_AUDIO_PATH, help="Path to testing audio files")
     parser.add_argument("--test_midi_path", type=str, default=TEST_MIDI_PATH, help="Path to testing MIDI files")
+    parser.add_argument("--model_path", type=str, default=None, help="Path to the model file to load")
+    parser.add_argument("--optimizer_path", type=str, default=None, help="Path to the optimizer file to load")
 
     args = parser.parse_args()
 
@@ -123,6 +125,8 @@ if __name__ == "__main__":
     TRAIN_MIDI_PATH = args.train_midi_path
     TEST_AUDIO_PATH = args.test_audio_path
     TEST_MIDI_PATH = args.test_midi_path
+    MODEL_PATH = args.model_path or get_model_path(FEATURE_TYPE, args.learning_rate, args.dropout)
+    OPTIMIZER_PATH = args.optimizer_path or get_optimizer_path(FEATURE_TYPE, args.learning_rate, args.dropout)
 
     LEARNING_RATES = [args.learning_rate]
     DROPOUTS = [args.dropout]
