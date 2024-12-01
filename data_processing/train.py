@@ -16,8 +16,12 @@ from .constants import (
     LEARNING_RATE,
     NUM_EPOCHS,
     TEST_AUDIO_PATH,
+    TEST_MEL_SPEC_DATA_PATH,
+    TEST_MFCC_DATA_PATH,
     TEST_MIDI_PATH,
     TRAIN_AUDIO_PATH,
+    TRAIN_MEL_SPEC_DATA_PATH,
+    TRAIN_MFCC_DATA_PATH,
     TRAIN_MIDI_PATH,
 )
 from .dataset import AudioMidiDataset
@@ -115,6 +119,10 @@ if __name__ == "__main__":
     parser.add_argument("--test_midi_path", type=str, default=TEST_MIDI_PATH, help="Path to testing MIDI files")
     parser.add_argument("--model_path", type=str, default=None, help="Path to the model file to load")
     parser.add_argument("--optimizer_path", type=str, default=None, help="Path to the optimizer file to load")
+    parser.add_argument("--train_mel_spec_data_path", type=str, default=TRAIN_MEL_SPEC_DATA_PATH, help="Path to the training mel spectrogram dataset")
+    parser.add_argument("--train_mfcc_data_path", type=str, default=TRAIN_MFCC_DATA_PATH, help="Path to the training MFCC dataset")
+    parser.add_argument("--test_mel_spec_data_path", type=str, default=TEST_MEL_SPEC_DATA_PATH, help="Path to the testing mel spectrogram dataset")
+    parser.add_argument("--test_mfcc_data_path", type=str, default=TEST_MFCC_DATA_PATH, help="Path to the testing MFCC dataset")
 
     args = parser.parse_args()
 
@@ -125,6 +133,10 @@ if __name__ == "__main__":
     TRAIN_MIDI_PATH = args.train_midi_path
     TEST_AUDIO_PATH = args.test_audio_path
     TEST_MIDI_PATH = args.test_midi_path
+    TRAIN_MEL_SPEC_DATA_PATH = args.train_mel_spec_data_path
+    TRAIN_MFCC_DATA_PATH = args.train_mfcc_data_path
+    TEST_MEL_SPEC_DATA_PATH = args.test_mel_spec_data_path
+    TEST_MFCC_DATA_PATH = args.test_mfcc_data_path
     MODEL_PATH = args.model_path or get_model_path(FEATURE_TYPE, args.learning_rate, args.dropout)
     OPTIMIZER_PATH = args.optimizer_path or get_optimizer_path(FEATURE_TYPE, args.learning_rate, args.dropout)
 
@@ -144,8 +156,8 @@ if __name__ == "__main__":
     print(f"Using {DEVICE} to run model training")
 
     train_dataset, test_dataset = load_dataset_if_exists(
-        f"data/{FEATURE_TYPE}_train_dataset.pth",
-        f"data/{FEATURE_TYPE}_test_dataset.pth"
+        TRAIN_MEL_SPEC_DATA_PATH if FEATURE_TYPE == "mel_spec" else TRAIN_MFCC_DATA_PATH,
+        TEST_MEL_SPEC_DATA_PATH if FEATURE_TYPE == "mel_spec" else TEST_MFCC_DATA_PATH,
     )
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
@@ -156,8 +168,8 @@ if __name__ == "__main__":
     for learning_rate in LEARNING_RATES:
         for dropout in DROPOUTS:
             model, optimizer = load_checkpoint_if_exists(
-                get_model_path(FEATURE_TYPE, learning_rate, dropout),
-                get_optimizer_path(FEATURE_TYPE, learning_rate, dropout),
+                MODEL_PATH,
+                OPTIMIZER_PATH,
                 { "learning_rate": learning_rate, "dropout": dropout },
             )
 
@@ -171,11 +183,11 @@ if __name__ == "__main__":
             )
             torch.save(
                 trained_model.state_dict(),
-                get_model_path(learning_rate, dropout),
+                MODEL_PATH,
             )
             torch.save(
                 optimizer.state_dict(),
-                get_optimizer_path(learning_rate, dropout),
+                OPTIMIZER_PATH,
             )
 
             results = evaluate_model(trained_model, test_loader)

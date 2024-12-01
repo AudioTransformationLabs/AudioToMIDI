@@ -10,6 +10,7 @@ from .constants import (
     LEARNING_RATE,
     FEATURE_TYPE,
     N_MELS,
+    N_MFCC,
     TEST_AUDIO_PATH,
     TEST_MIDI_PATH
 )
@@ -87,6 +88,7 @@ if __name__ == "__main__":
     MIDI_PATH = f"{TEST_MIDI_PATH}/00_BN3-154-E_comp.mid"
 
     transform = mel_spec_transform() if FEATURE_TYPE == "mel_spec" else mfcc_transform()
+    dimension = N_MELS if FEATURE_TYPE == "mel_spec" else N_MFCC
 
     audio_chunks, midi_chunks = split_audio_midi_pair(AUDIO_PATH, MIDI_PATH, transform, CHUNK_LENGTH, HOP_LENGTH)
 
@@ -96,9 +98,10 @@ if __name__ == "__main__":
     with torch.no_grad():
         os.makedirs("results", exist_ok=True)
         plot_spectrogram(audio[0], title="Spectrogram", path=f"results/{FEATURE_TYPE}.png")
-        audio = audio.reshape(1, 1, 128, 1024).to(DEVICE)
+        audio = audio.reshape(1, 1, dimension, CHUNK_LENGTH).to(DEVICE)
         for t in numeric_range(0.1, 0.95, 0.1):
-            predicted_piano_roll = (torch.sigmoid(model(audio)[0]) >= t).float()
+            output = model(audio)[0]
+            predicted_piano_roll = (torch.sigmoid(output) >= t).float()
             predicted_piano_roll = remove_short_fragments(fill_segment_gaps(predicted_piano_roll.cpu().numpy())).reshape(N_MELS, CHUNK_LENGTH)
             plot_piano_roll(predicted_piano_roll, path=f"results/predicted_piano_roll_{t:.1f}.png")
 

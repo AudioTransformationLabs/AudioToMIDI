@@ -14,6 +14,11 @@ TRAIN_MIDI_PATH = "data/train/midi"
 TEST_AUDIO_PATH = "data/test/audio"
 TEST_MIDI_PATH = "data/test/midi"
 
+TRAIN_MEL_SPEC_DATA_PATH = f"data/mel_spec_train_dataset.pth"
+TRAIN_MFCC_DATA_PATH = f"data/mfcc_train_dataset.pth"
+TEST_MEL_SPEC_DATA_PATH = f"data/mel_spec_test_dataset.pth"
+TEST_MFCC_DATA_PATH = f"data/mfcc_test_dataset.pth"
+
 # Model Filename
 MODEL_NAME = "AudioToMidiCNN"
 
