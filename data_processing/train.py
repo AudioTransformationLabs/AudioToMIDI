@@ -46,8 +46,8 @@ def load_dataset_if_exists(train_data_path, test_data_path):
         )
         train_dataset = AudioMidiDataset(TRAIN_AUDIO_PATH, TRAIN_MIDI_PATH, transform)
         test_dataset = AudioMidiDataset(TEST_AUDIO_PATH, TEST_MIDI_PATH, transform)
-        torch.save(train_dataset, train_data_path)
-        torch.save(test_dataset, test_data_path)
+        # torch.save(train_dataset, train_data_path)
+        # torch.save(test_dataset, test_data_path)
         return train_dataset, test_dataset
     else:
         train_dataset = torch.load(train_data_path)
@@ -84,10 +84,10 @@ def train_model(
             criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight.unsqueeze(1))
 
             outputs = model(audio)
-            outputs = (torch.sigmoid(model(audio)) >= threshold).float()
 
             loss = criterion(outputs, midi)
-            loss.requires_grad = True
+            # loss.requires_grad = True
+
             loss.backward()
             optimizer.step()
 
@@ -101,11 +101,15 @@ def train_model(
 
 
 if __name__ == "__main__":
+
     transform = (
         Transformer.mel_spec_transform()
         if FEATURE_TYPE == "mel_spec"
         else Transformer.mfcc_transform()
     )
+    start_num_epochs = None
+    with open("./metadata.json", "r") as f:
+        start_num_epochs = json.load(f)[FEATURE_TYPE]["epochs"]
     device = torch.device(
         "mps"
         if torch.mps.is_available()
@@ -139,7 +143,7 @@ if __name__ == "__main__":
                 dropout,
                 train_loader,
                 optimizer,
-                start_epoch=100,
+                start_epoch=start_num_epochs,
                 epochs=NUM_EPOCHS,
                 device=device,
             )

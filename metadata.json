@@ -1,0 +1,8 @@
+{
+  "mel_spec": {
+    "epochs": 100
+  },
+  "mfcc": {
+    "epochs": 0
+  }
+}
